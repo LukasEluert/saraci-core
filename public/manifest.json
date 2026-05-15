@@ -1,0 +1,10 @@
+{
+  "name": "Saraci Core",
+  "short_name": "Saraci Core",
+  "description": "Lead Research, Checks und Berichte für Saraci Core.",
+  "start_url": "/overview",
+  "display": "standalone",
+  "background_color": "#060606",
+  "theme_color": "#060606",
+  "lang": "de"
+}
