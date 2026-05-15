@@ -1,11 +1,9 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 
-export default async function Home() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  redirect(user ? "/overview" : "/login");
+/**
+ * „/“ wird vom Proxy zuerst abgesichert (Login/Session).
+ * Diese Page ist der Route-Handler für `/` und leitet auf die Startansicht weiter.
+ */
+export default function Home() {
+  redirect("/overview");
 }
