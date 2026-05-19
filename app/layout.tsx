@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Mono, DM_Sans } from "next/font/google";
 import "./globals.css";
+import { Toaster } from "@/components/ui/sonner";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -46,7 +47,7 @@ export default function RootLayout({
   return (
     <html
       lang="de"
-      className={`${dmSans.variable} ${dmMono.variable} h-full antialiased`}
+      className={`dark h-full antialiased ${dmSans.variable} ${dmMono.variable}`}
     >
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -56,8 +57,12 @@ export default function RootLayout({
           content="black-translucent"
         />
       </head>
-      <body className="min-h-full flex flex-col bg-[var(--bg)] text-[var(--text-primary)]">
+      <body
+        className="min-h-full flex flex-col bg-[var(--bg)] text-[var(--text-primary)]"
+        suppressHydrationWarning
+      >
         {children}
+        <Toaster theme="dark" richColors position="top-right" />
       </body>
     </html>
   );

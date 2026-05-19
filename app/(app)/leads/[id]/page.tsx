@@ -1,0 +1,155 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { FindingsList } from "@/components/leads/FindingsList";
+import { LeadActionsPanel } from "@/components/leads/LeadActionsPanel";
+import { LeadReportSection } from "@/components/leads/LeadReportSection";
+import { PotentialBadge } from "@/components/leads/PotentialBadge";
+import { ScoreBadge } from "@/components/leads/ScoreBadge";
+import { ScoreBreakdown } from "@/components/leads/ScoreBreakdown";
+import { StatusBadge } from "@/components/leads/StatusBadge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { formatDateTime } from "@/lib/leads/format";
+import { getLeadDetail } from "@/lib/leads/queries";
+import { listIndustries, listRegions } from "@/lib/leads/reference";
+import type { TriggeredRule } from "@/lib/core/checks/types";
+
+export const metadata: Metadata = {
+  title: "Lead",
+};
+
+type PageProps = { params: Promise<{ id: string }> };
+
+export default async function LeadDetailPage({ params }: PageProps) {
+  const { id } = await params;
+  const [lead, industries, regions] = await Promise.all([
+    getLeadDetail(id),
+    listIndustries(),
+    listRegions(),
+  ]);
+
+  if (!lead) notFound();
+
+  const latestCheck = lead.checks[0] ?? null;
+  const findings = (latestCheck?.findings ?? []) as TriggeredRule[];
+  const breakdown = latestCheck?.score_breakdown ?? null;
+
+  return (
+    <div className="p-4 md:p-6">
+      <Link
+        href="/leads"
+        className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+      >
+        ← Leads
+      </Link>
+
+      <div className="mt-4 grid gap-6 lg:grid-cols-[1fr_320px]">
+        <div className="space-y-6">
+          <header className="space-y-3">
+            <h1 className="text-2xl font-medium tracking-tight">
+              {lead.firma ?? lead.normalized_domain ?? "Lead"}
+            </h1>
+            <a
+              href={lead.domain.startsWith("http") ? lead.domain : `https://${lead.domain}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-mono text-sm text-[var(--accent)] hover:underline"
+            >
+              {lead.domain}
+            </a>
+            <div className="flex flex-wrap items-center gap-2">
+              <ScoreBadge score={lead.score} potential={lead.potential} />
+              <PotentialBadge potential={lead.potential} />
+              <StatusBadge status={lead.status} />
+              {lead.pending_check && (
+                <span className="text-xs text-yellow-400">Wird geprüft…</span>
+              )}
+            </div>
+          </header>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Score-Breakdown</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScoreBreakdown breakdown={breakdown} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Findings</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <FindingsList findings={findings} />
+            </CardContent>
+          </Card>
+
+          {lead.report && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Bericht</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <LeadReportSection markdown={lead.report.body_markdown} />
+              </CardContent>
+            </Card>
+          )}
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Check-Historie</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {lead.checks.length === 0 ? (
+                <p className="text-sm text-[var(--text-secondary)]">
+                  Noch keine Checks.
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {lead.checks.map((c) => (
+                    <li key={c.id}>
+                      <Link
+                        href={`/leads/${lead.id}/checks/${c.id}`}
+                        className="flex items-center justify-between rounded-md border border-[var(--border)] px-3 py-2 text-sm hover:bg-[var(--surface-hover)]"
+                      >
+                        <span>{formatDateTime(c.created_at)}</span>
+                        <span className="font-mono">
+                          {c.score != null ? `${c.score}/100` : "—"}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <aside className="space-y-4">
+          <Card>
+            <CardContent className="pt-6">
+              <LeadActionsPanel
+                lead={lead}
+                industries={industries}
+                regions={regions}
+              />
+              <Separator className="my-4" />
+              <dl className="space-y-2 text-xs text-[var(--text-secondary)]">
+                <div>
+                  <dt className="font-medium">Erstellt</dt>
+                  <dd>{formatDateTime(lead.created_at)}</dd>
+                </div>
+                <div>
+                  <dt className="font-medium">Letzter Check</dt>
+                  <dd>{formatDateTime(lead.last_checked_at)}</dd>
+                </div>
+              </dl>
+            </CardContent>
+          </Card>
+        </aside>
+      </div>
+    </div>
+  );
+}

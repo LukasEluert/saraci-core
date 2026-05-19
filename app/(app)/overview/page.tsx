@@ -1,24 +1,31 @@
 import type { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
-import { PotenzialBadge } from "@/components/PotenzialBadge";
+import Link from "next/link";
+import { PotentialBadge } from "@/components/leads/PotentialBadge";
+import { ScoreBadge } from "@/components/leads/ScoreBadge";
+import { formatDateTime } from "@/lib/leads/format";
+import { getOverviewStats, getRecentChecks } from "@/lib/overview/queries";
 
 export const metadata: Metadata = {
   title: "Übersicht",
 };
+
+export const dynamic = "force-dynamic";
 
 function StatCard({
   title,
   value,
   hint,
   denseValue,
+  href,
 }: {
   title: string;
   value: string;
   hint?: string;
   denseValue?: boolean;
+  href?: string;
 }) {
-  return (
-    <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] p-3">
+  const inner = (
+    <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] p-3 transition-colors hover:bg-[var(--surface-hover)]">
       <div className="label-caps">{title}</div>
       <div
         className={`mt-2 font-mono font-medium tracking-tight text-[var(--text-primary)] leading-snug ${
@@ -27,147 +34,138 @@ function StatCard({
       >
         {value}
       </div>
-      {hint && <div className="mt-2 text-[11px] text-[var(--text-tertiary)]">{hint}</div>}
+      {hint && (
+        <div className="mt-2 text-[11px] text-[var(--text-tertiary)]">{hint}</div>
+      )}
     </div>
   );
+
+  if (href) {
+    return <Link href={href}>{inner}</Link>;
+  }
+
+  return inner;
 }
 
 export default async function OverviewPage() {
-  const supabase = await createClient();
-
-  const weekAgo = new Date();
-  weekAgo.setDate(weekAgo.getDate() - 7);
-  const weekAgoIso = weekAgo.toISOString();
-
-  const [
-    totalRes,
-    newWeekRes,
-    highRes,
-    pipelineRes,
-    lastCheckRes,
-    recentChecksRes,
-  ] = await Promise.all([
-    supabase.from("core_leads").select("*", { count: "exact", head: true }),
-    supabase
-      .from("core_leads")
-      .select("*", { count: "exact", head: true })
-      .gte("created_at", weekAgoIso),
-    supabase
-      .from("core_leads")
-      .select("*", { count: "exact", head: true })
-      .eq("potenzial", "hoch"),
-    supabase
-      .from("core_leads")
-      .select("*", { count: "exact", head: true })
-      .in("status", ["neu", "kontaktiert", "qualifiziert", "angebot"]),
-    supabase
-      .from("core_site_checks")
-      .select("checked_at")
-      .order("checked_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabase
-      .from("core_site_checks")
-      .select("id, lead_id, checked_at, score")
-      .order("checked_at", { ascending: false })
-      .limit(5),
+  const [stats, recent] = await Promise.all([
+    getOverviewStats(),
+    getRecentChecks(8),
   ]);
 
-  const recent = recentChecksRes.data ?? [];
-  const leadIds = [
-    ...new Set(recent.map((c) => c.lead_id).filter((x): x is string => !!x)),
-  ];
-
-  const leadMap = new Map<
-    string,
-    { domain: string; firma: string | null; potenzial: string | null }
-  >();
-
-  if (leadIds.length) {
-    const { data: leads } = await supabase
-      .from("core_leads")
-      .select("id, domain, firma, potenzial")
-      .in("id", leadIds);
-
-    leads?.forEach((l) =>
-      leadMap.set(l.id, {
-        domain: l.domain,
-        firma: l.firma,
-        potenzial: l.potenzial,
-      })
-    );
-  }
-
-  const totalLeads = totalRes.count ?? 0;
-  const newLeadsWeek = newWeekRes.count ?? 0;
-  const highPotential = highRes.count ?? 0;
-  const openPipeline = pipelineRes.count ?? 0;
-
-  const lastCheckAt = lastCheckRes.data?.checked_at
-    ? new Date(lastCheckRes.data.checked_at).toLocaleString("de-DE", {
-        dateStyle: "medium",
-        timeStyle: "short",
-      })
+  const lastCheckAt = stats.lastCheckAt
+    ? formatDateTime(stats.lastCheckAt)
     : "—";
 
   return (
     <div className="flex h-full flex-col gap-3 p-4 md:gap-4 md:p-6">
-      <div className="shrink-0 grid grid-cols-2 gap-2 md:grid-cols-5 md:gap-3">
-        <StatCard title="Leads gesamt" value={String(totalLeads)} />
-        <StatCard title="Neue Leads" value={String(newLeadsWeek)} hint="Letzte 7 Tage" />
-        <StatCard title="Hohe Potenziale" value={String(highPotential)} />
-        <StatCard title="Offene Checks" value={String(openPipeline)} hint="Aktive Status" />
-        <StatCard title="Letzte Checks" value={lastCheckAt} denseValue />
+      <div>
+        <div className="label-caps">Dashboard</div>
+        <h1 className="text-xl font-medium tracking-tight">Übersicht</h1>
       </div>
 
-      <div className="label-caps shrink-0">Letzte geprüfte Leads</div>
+      <div className="shrink-0 grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-7 md:gap-3">
+        <StatCard title="Leads gesamt" value={String(stats.totalLeads)} href="/leads" />
+        <StatCard
+          title="Neue Leads"
+          value={String(stats.newLeadsWeek)}
+          hint="Letzte 7 Tage"
+          href="/leads"
+        />
+        <StatCard
+          title="Hohes Potenzial"
+          value={String(stats.highPotential)}
+          hint="Score-Pipeline"
+          href="/leads?potential=high"
+        />
+        <StatCard
+          title="Pipeline offen"
+          value={String(stats.openPipeline)}
+          hint="Neu · qualifiziert · kontaktiert"
+          href="/leads"
+        />
+        <StatCard
+          title="Checks ausstehend"
+          value={String(stats.pendingChecks)}
+          hint="Warteschlange"
+        />
+        <StatCard
+          title="Research-Jobs"
+          value={String(stats.completedResearchJobs)}
+          hint="Abgeschlossen"
+          href="/research"
+        />
+        <StatCard title="Letzter Check" value={lastCheckAt} denseValue />
+      </div>
 
-      <div className="min-h-0 flex-1 overflow-hidden rounded-md border border-[var(--border)] bg-[var(--surface)] md:overflow-hidden">
-        <div className="h-full overflow-auto md:overflow-hidden">
-          <table className="w-full border-collapse text-left text-[12px] tracking-[-0.01em]">
+      <div className="flex items-center justify-between gap-2">
+        <div className="label-caps">Letzte Website-Checks</div>
+        <Link
+          href="/leads"
+          className="text-xs text-[var(--accent)] hover:underline"
+        >
+          Alle Leads →
+        </Link>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-hidden rounded-md border border-[var(--border)] bg-[var(--surface)]">
+        <div className="h-full overflow-auto">
+          <table className="w-full border-collapse text-left text-[12px]">
             <thead className="sticky top-0 bg-[var(--surface-hover)]">
-              <tr className="label-caps text-[10px] text-[var(--text-tertiary)] [&>th]:px-4 [&>th]:py-3 [&>th]:font-semibold">
-                <th className="border-b border-[var(--border)] font-mono uppercase">Domain</th>
-                <th className="hidden border-b border-[var(--border)] sm:table-cell">Firma</th>
+              <tr className="label-caps text-[10px] text-[var(--text-tertiary)] [&>th]:px-4 [&>th]:py-3">
+                <th className="border-b border-[var(--border)]">Firma</th>
+                <th className="hidden border-b border-[var(--border)] sm:table-cell">
+                  Domain
+                </th>
                 <th className="border-b border-[var(--border)]">Score</th>
                 <th className="border-b border-[var(--border)]">Potenzial</th>
-                <th className="hidden border-b border-[var(--border)] md:table-cell">Check</th>
+                <th className="hidden border-b border-[var(--border)] md:table-cell">
+                  Check
+                </th>
               </tr>
             </thead>
             <tbody>
-              {recent.map((row) => {
-                const lead = row.lead_id ? leadMap.get(row.lead_id) : undefined;
-                const checkedAt = new Date(row.checked_at).toLocaleString("de-DE", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                });
-                return (
-                  <tr
-                    key={row.id}
-                    className="border-b border-[var(--border-subtle)] [&>td]:px-4 [&>td]:py-2"
-                  >
-                    <td className="font-mono text-[12px] text-[var(--text-primary)]">
-                      {lead?.domain ?? "—"}
-                    </td>
-                    <td className="hidden text-[var(--text-secondary)] sm:table-cell">
-                      {lead?.firma ?? "—"}
-                    </td>
-                    <td className="font-mono text-[12px] text-[var(--text-secondary)]">{row.score ?? 0}</td>
-                    <td>
-                      <PotenzialBadge potenzial={lead?.potenzial} />
-                    </td>
-                    <td className="hidden text-[var(--text-tertiary)] md:table-cell">{checkedAt}</td>
-                  </tr>
-                );
-              })}
+              {recent.map((row) => (
+                <tr
+                  key={row.checkId}
+                  className="border-b border-[var(--border-subtle)] hover:bg-[var(--surface-hover)] [&>td]:px-4 [&>td]:py-2"
+                >
+                  <td>
+                    <Link
+                      href={`/leads/${row.leadId}`}
+                      className="font-medium text-[var(--text-primary)] hover:text-[var(--accent)] hover:underline"
+                    >
+                      {row.firma ?? row.domain}
+                    </Link>
+                  </td>
+                  <td className="hidden font-mono text-[var(--text-secondary)] sm:table-cell">
+                    {row.domain}
+                  </td>
+                  <td>
+                    <ScoreBadge score={row.score} potential={row.potential} />
+                  </td>
+                  <td>
+                    <PotentialBadge potential={row.potential} />
+                  </td>
+                  <td className="hidden text-[var(--text-tertiary)] md:table-cell">
+                    {formatDateTime(row.checkedAt)}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
 
           {recent.length === 0 && (
             <div className="p-8 text-center text-sm text-[var(--text-secondary)]">
-              Noch keine gespeicherten Checks — starte welche in „Lead Research“.
+              Noch keine Checks.{" "}
+              <Link href="/leads/new" className="text-[var(--accent)] underline">
+                Lead anlegen
+              </Link>{" "}
+              oder{" "}
+              <Link href="/research/new" className="text-[var(--accent)] underline">
+                Research starten
+              </Link>
+              .
             </div>
           )}
         </div>

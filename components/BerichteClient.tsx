@@ -1,23 +1,19 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
-import { deleteBericht } from "@/app/actions/core";
-import { MarkdownBody } from "@/components/MarkdownBody";
-import { PotenzialBadge } from "@/components/PotenzialBadge";
 import { useRouter } from "next/navigation";
+import { deleteLeadReport } from "@/app/actions/reports";
+import { MarkdownBody } from "@/components/MarkdownBody";
+import { PotentialBadge } from "@/components/leads/PotentialBadge";
+import { ScoreBadge } from "@/components/leads/ScoreBadge";
+import { recommendationLabel } from "@/lib/berichte/labels";
+import type { BerichtListItem } from "@/lib/berichte/queries";
+import { formatDateTime } from "@/lib/leads/format";
 
-export type BerichtListItem = {
-  id: string;
-  lead_id: string;
-  inhalt: string | null;
-  erstellt_at: string;
-  lead_domain: string;
-  lead_firma: string | null;
-  lead_potenzial: string | null;
-};
-
-function previewText(md: string) {
-  const flat = md.replace(/\s+/g, " ").trim();
+function previewText(md: string, summary: string | null) {
+  const source = summary?.trim() || md;
+  const flat = source.replace(/\s+/g, " ").trim();
   if (flat.length <= 220) return flat;
   return `${flat.slice(0, 217)}…`;
 }
@@ -30,9 +26,11 @@ export function BerichteClient({ items }: { items: BerichtListItem[] }) {
   const [dialogStart, startDialog] = useTransition();
 
   const sorted = useMemo(() => {
-    return [...items].sort(
-      (a, b) => new Date(b.erstellt_at).getTime() - new Date(a.erstellt_at).getTime()
-    );
+    return [...items].sort((a, b) => {
+      const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return tb - ta;
+    });
   }, [items]);
 
   const remove = (id: string) => {
@@ -43,7 +41,7 @@ export function BerichteClient({ items }: { items: BerichtListItem[] }) {
     startDialog(() => {
       void (async () => {
         try {
-          await deleteBericht(id);
+          await deleteLeadReport(id);
           setOpen((cur) => (cur?.id === id ? null : cur));
           router.refresh();
         } catch (e) {
@@ -59,7 +57,9 @@ export function BerichteClient({ items }: { items: BerichtListItem[] }) {
     <div className="flex h-full flex-col gap-3 p-4 md:p-6">
       <div>
         <div className="label-caps">Berichte</div>
-        <div className="mt-1 text-sm text-[var(--text-secondary)]">{sorted.length} Berichte</div>
+        <div className="mt-1 text-sm text-[var(--text-secondary)]">
+          {sorted.length} Berichte aus Website-Checks (Markdown + PDF-Export)
+        </div>
       </div>
 
       {error && (
@@ -70,8 +70,12 @@ export function BerichteClient({ items }: { items: BerichtListItem[] }) {
 
       <div className="min-h-0 flex-1 space-y-2 overflow-auto">
         {sorted.map((item) => {
-          const title = item.lead_firma?.trim() || item.lead_domain;
-          const body = item.inhalt ?? "";
+          const title = item.title?.trim() || item.lead_firma?.trim() || item.lead_domain;
+          const body = item.body_markdown ?? "";
+          const created = item.created_at
+            ? formatDateTime(item.created_at)
+            : "—";
+
           return (
             <div
               key={item.id}
@@ -86,16 +90,48 @@ export function BerichteClient({ items }: { items: BerichtListItem[] }) {
                     {item.lead_domain}
                   </div>
                   <div className="flex flex-wrap items-center gap-2 pt-1">
-                    <div className="text-[11px] text-[var(--text-tertiary)]">
-                      {new Date(item.erstellt_at).toLocaleString("de-DE", {
-                        dateStyle: "medium",
-                        timeStyle: "short",
-                      })}
-                    </div>
-                    <PotenzialBadge potenzial={item.lead_potenzial} />
+                    <span className="text-[11px] text-[var(--text-tertiary)]">
+                      {created}
+                    </span>
+                    <ScoreBadge
+                      score={item.check_score}
+                      potential={item.lead_potential}
+                    />
+                    <PotentialBadge potential={item.lead_potential} />
+                    <span className="rounded-full border border-[var(--border)] bg-[var(--surface-hover)] px-2 py-0.5 text-[10px] text-[var(--text-secondary)]">
+                      {recommendationLabel(item.recommendation)}
+                    </span>
                   </div>
                 </div>
-                <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+                <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
+                  {item.lead_id && (
+                    <Link
+                      href={`/leads/${item.lead_id}`}
+                      className="focus-ring rounded-md border border-[var(--border)] bg-[var(--surface-hover)] px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--text-primary)]"
+                    >
+                      Lead
+                    </Link>
+                  )}
+                  {item.lead_id && (
+                    <>
+                      <a
+                        href={`/api/leads/${item.lead_id}/report-client.pdf`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="focus-ring rounded-md border border-[var(--border)] bg-[var(--surface-hover)] px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--text-primary)]"
+                      >
+                        Kunden-PDF
+                      </a>
+                      <a
+                        href={`/api/leads/${item.lead_id}/report-internal.pdf`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="focus-ring rounded-md border border-[var(--border)] bg-transparent px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--text-secondary)]"
+                      >
+                        Intern-PDF
+                      </a>
+                    </>
+                  )}
                   <button
                     type="button"
                     onClick={() => setOpen(item)}
@@ -114,7 +150,7 @@ export function BerichteClient({ items }: { items: BerichtListItem[] }) {
                 </div>
               </div>
               <p className="mt-3 text-sm leading-relaxed text-[var(--text-secondary)]">
-                {previewText(body)}
+                {previewText(body, item.summary)}
               </p>
             </div>
           );
@@ -122,7 +158,12 @@ export function BerichteClient({ items }: { items: BerichtListItem[] }) {
 
         {sorted.length === 0 && (
           <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] p-10 text-center text-sm text-[var(--text-secondary)]">
-            Noch keine Berichte — aus einem Lead heraus erzeugen.
+            Noch keine Berichte. Nach einem{" "}
+            <Link href="/leads" className="text-[var(--accent)] underline">
+              Website-Check
+            </Link>{" "}
+            wird hier automatisch ein Markdown-Bericht angelegt — PDFs lassen sich
+            am Lead exportieren.
           </div>
         )}
       </div>
@@ -140,10 +181,17 @@ export function BerichteClient({ items }: { items: BerichtListItem[] }) {
               <div className="min-w-0">
                 <div className="label-caps">Bericht</div>
                 <div className="mt-1 truncate text-sm text-[var(--text-primary)]">
-                  {open.lead_firma?.trim() || open.lead_domain}
+                  {open.title || open.lead_firma?.trim() || open.lead_domain}
                 </div>
-                <div className="mt-2">
-                  <PotenzialBadge potenzial={open.lead_potenzial} />
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <PotentialBadge potential={open.lead_potential} />
+                  <ScoreBadge
+                    score={open.check_score}
+                    potential={open.lead_potential}
+                  />
+                  <span className="text-[11px] text-[var(--text-tertiary)]">
+                    {recommendationLabel(open.recommendation)}
+                  </span>
                 </div>
               </div>
               <button
@@ -155,7 +203,7 @@ export function BerichteClient({ items }: { items: BerichtListItem[] }) {
               </button>
             </div>
             <div className="min-h-0 flex-1 overflow-auto px-5 py-4">
-              <MarkdownBody source={open.inhalt ?? ""} />
+              <MarkdownBody source={open.body_markdown ?? ""} />
             </div>
           </div>
         </div>

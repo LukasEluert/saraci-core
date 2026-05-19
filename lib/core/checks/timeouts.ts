@@ -1,0 +1,5 @@
+export const HEAD_TIMEOUT_MS = 6000;
+export const GET_TIMEOUT_MS = 10000;
+export const PAGESPEED_TIMEOUT_MS = 60000;
+export const QUEUE_TRIGGER_FETCH_TIMEOUT_MS = 5000;
+export const TOTAL_CHECK_TIMEOUT_MS = 90000;
