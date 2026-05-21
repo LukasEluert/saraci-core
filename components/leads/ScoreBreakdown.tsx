@@ -85,7 +85,7 @@ export function ScoreBreakdown({
               </span>
               <span className="font-mono tabular-nums">{points}</span>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-[var(--surface-hover)]">
+            <div className="h-2 overflow-hidden rounded-full bg-[var(--bg-elevated-2)]">
               <div
                 className={`h-full rounded-full ${className}`}
                 style={{ width }}

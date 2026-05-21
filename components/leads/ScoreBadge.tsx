@@ -1,15 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { BADGE_BASE, scoreBadgeVariant } from "@/lib/ui/badge-styles";
 import type { LeadPotential } from "@/lib/leads/types";
-
-function scoreBadgeClass(score: number | null | undefined): string {
-  if (score === null || score === undefined) {
-    return "bg-neutral-700 text-neutral-300";
-  }
-  if (score <= 40) return "bg-red-500 text-white";
-  if (score <= 70) return "bg-yellow-500 text-black";
-  return "bg-green-500 text-white";
-}
 
 export function ScoreBadge({
   score,
@@ -18,19 +10,19 @@ export function ScoreBadge({
   score: number | null;
   potential?: LeadPotential | null;
 }) {
+  const variant = scoreBadgeVariant(score);
+
   if (score === null || score === undefined) {
     return (
-      <Badge className={cn("border-0 font-mono", scoreBadgeClass(score))}>
+      <span className={cn(BADGE_BASE, "font-mono tabular-nums", variant)}>
         —
-      </Badge>
+      </span>
     );
   }
 
   return (
-    <Badge
-      className={cn("border-0 font-mono tabular-nums", scoreBadgeClass(score))}
-    >
+    <span className={cn(BADGE_BASE, "font-mono tabular-nums", variant)}>
       {score}
-    </Badge>
+    </span>
   );
 }

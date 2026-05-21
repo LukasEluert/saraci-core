@@ -36,25 +36,29 @@ export default async function LeadDetailPage({ params }: PageProps) {
   const breakdown = latestCheck?.score_breakdown ?? null;
 
   return (
-    <div className="p-4 md:p-6">
+    <div className="space-y-6">
       <Link
         href="/leads"
-        className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+        className="inline-block text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
       >
         ← Leads
       </Link>
 
-      <div className="mt-4 grid gap-6 lg:grid-cols-[1fr_320px]">
-        <div className="space-y-6">
-          <header className="space-y-3">
-            <h1 className="text-2xl font-medium tracking-tight">
+      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+        <div className="flex min-w-0 flex-col gap-6">
+          <header className="space-y-3 border-b border-[var(--border)] pb-6">
+            <h1 className="font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
               {lead.firma ?? lead.normalized_domain ?? "Lead"}
             </h1>
             <a
-              href={lead.domain.startsWith("http") ? lead.domain : `https://${lead.domain}`}
+              href={
+                lead.domain.startsWith("http")
+                  ? lead.domain
+                  : `https://${lead.domain}`
+              }
               target="_blank"
               rel="noopener noreferrer"
-              className="font-mono text-sm text-[var(--accent)] hover:underline"
+              className="inline-block font-mono text-sm text-[var(--accent)] hover:underline"
             >
               {lead.domain}
             </a>
@@ -70,7 +74,7 @@ export default async function LeadDetailPage({ params }: PageProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Score-Breakdown</CardTitle>
+              <CardTitle>Score-Breakdown</CardTitle>
             </CardHeader>
             <CardContent>
               <ScoreBreakdown breakdown={breakdown} />
@@ -79,7 +83,7 @@ export default async function LeadDetailPage({ params }: PageProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Findings</CardTitle>
+              <CardTitle>Findings</CardTitle>
             </CardHeader>
             <CardContent>
               <FindingsList findings={findings} />
@@ -89,7 +93,7 @@ export default async function LeadDetailPage({ params }: PageProps) {
           {lead.report && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Bericht</CardTitle>
+                <CardTitle>Bericht</CardTitle>
               </CardHeader>
               <CardContent>
                 <LeadReportSection markdown={lead.report.body_markdown} />
@@ -99,7 +103,7 @@ export default async function LeadDetailPage({ params }: PageProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Check-Historie</CardTitle>
+              <CardTitle>Check-Historie</CardTitle>
             </CardHeader>
             <CardContent>
               {lead.checks.length === 0 ? (
@@ -112,10 +116,10 @@ export default async function LeadDetailPage({ params }: PageProps) {
                     <li key={c.id}>
                       <Link
                         href={`/leads/${lead.id}/checks/${c.id}`}
-                        className="flex items-center justify-between rounded-md border border-[var(--border)] px-3 py-2 text-sm hover:bg-[var(--surface-hover)]"
+                        className="flex items-center justify-between rounded-md border border-[var(--border)] px-3 py-2.5 text-sm transition-colors hover:bg-[var(--bg-hover)]"
                       >
                         <span>{formatDateTime(c.created_at)}</span>
-                        <span className="font-mono">
+                        <span className="font-mono tabular-nums">
                           {c.score != null ? `${c.score}/100` : "—"}
                         </span>
                       </Link>
@@ -127,9 +131,12 @@ export default async function LeadDetailPage({ params }: PageProps) {
           </Card>
         </div>
 
-        <aside className="space-y-4">
+        <aside className="w-full shrink-0 lg:w-[320px]">
           <Card>
-            <CardContent className="pt-6">
+            <CardHeader>
+              <CardTitle>Aktionen</CardTitle>
+            </CardHeader>
+            <CardContent>
               <LeadActionsPanel
                 lead={lead}
                 industries={industries}
@@ -138,11 +145,15 @@ export default async function LeadDetailPage({ params }: PageProps) {
               <Separator className="my-4" />
               <dl className="space-y-2 text-xs text-[var(--text-secondary)]">
                 <div>
-                  <dt className="font-medium">Erstellt</dt>
+                  <dt className="font-medium text-[var(--text-tertiary)]">
+                    Erstellt
+                  </dt>
                   <dd>{formatDateTime(lead.created_at)}</dd>
                 </div>
                 <div>
-                  <dt className="font-medium">Letzter Check</dt>
+                  <dt className="font-medium text-[var(--text-tertiary)]">
+                    Letzter Check
+                  </dt>
                   <dd>{formatDateTime(lead.last_checked_at)}</dd>
                 </div>
               </dl>

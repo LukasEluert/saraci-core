@@ -42,9 +42,9 @@ export function LeadFilters() {
   const scoreMax = searchParams.get("score_max") ?? "";
 
   return (
-    <div className="grid gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 md:grid-cols-2 lg:grid-cols-5">
-      <div className="space-y-1.5">
-        <Label className="label-caps text-[10px]">Status</Label>
+    <div className="filter-bar grid gap-3 md:grid-cols-2 lg:grid-cols-5">
+      <div>
+        <Label>Status</Label>
         <Select
           value={status || "all"}
           onValueChange={(v) =>
@@ -52,7 +52,7 @@ export function LeadFilters() {
           }
           disabled={pending}
         >
-          <SelectTrigger>
+          <SelectTrigger size="sm" className="w-full">
             <SelectValue placeholder="Alle" />
           </SelectTrigger>
           <SelectContent>
@@ -66,8 +66,8 @@ export function LeadFilters() {
         </Select>
       </div>
 
-      <div className="space-y-1.5">
-        <Label className="label-caps text-[10px]">Potenzial</Label>
+      <div>
+        <Label>Potenzial</Label>
         <Select
           value={potential || "all"}
           onValueChange={(v) =>
@@ -75,7 +75,7 @@ export function LeadFilters() {
           }
           disabled={pending}
         >
-          <SelectTrigger>
+          <SelectTrigger size="sm" className="w-full">
             <SelectValue placeholder="Alle" />
           </SelectTrigger>
           <SelectContent>
@@ -89,8 +89,8 @@ export function LeadFilters() {
         </Select>
       </div>
 
-      <div className="space-y-1.5">
-        <Label className="label-caps text-[10px]">Score min</Label>
+      <div>
+        <Label>Score min</Label>
         <Input
           type="number"
           min={0}
@@ -98,11 +98,12 @@ export function LeadFilters() {
           value={scoreMin}
           onChange={(e) => updateParams({ score_min: e.target.value || null })}
           placeholder="0"
+          className="h-8"
         />
       </div>
 
-      <div className="space-y-1.5">
-        <Label className="label-caps text-[10px]">Score max</Label>
+      <div>
+        <Label>Score max</Label>
         <Input
           type="number"
           min={0}
@@ -110,15 +111,17 @@ export function LeadFilters() {
           value={scoreMax}
           onChange={(e) => updateParams({ score_max: e.target.value || null })}
           placeholder="100"
+          className="h-8"
         />
       </div>
 
-      <div className="space-y-1.5 md:col-span-2 lg:col-span-1">
-        <Label className="label-caps text-[10px]">Suche</Label>
+      <div className="md:col-span-2 lg:col-span-1">
+        <Label>Suche</Label>
         <Input
           value={q}
           onChange={(e) => updateParams({ q: e.target.value || null })}
           placeholder="Firma oder Domain"
+          className="h-8"
         />
       </div>
     </div>

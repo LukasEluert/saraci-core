@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Users } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -7,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { PotentialBadge } from "@/components/leads/PotentialBadge";
 import { ScoreBadge } from "@/components/leads/ScoreBadge";
 import { StatusBadge } from "@/components/leads/StatusBadge";
@@ -22,21 +24,23 @@ export function LeadsTable({
 }) {
   if (leads.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-[var(--border)] p-12 text-center text-sm text-[var(--text-secondary)]">
-        Noch keine Leads.{" "}
-        <Link href="/leads/new" className="text-[var(--accent)] underline">
-          URL eingeben
-        </Link>
-        .
+      <div className="table-shell">
+        <TableEmptyState
+          icon={Users}
+          title="Noch keine Leads"
+          description="Lege einen Lead per URL an oder übernimm Funde aus der Lead Research."
+          actionLabel="Neuer Lead"
+          actionHref="/leads/new"
+        />
       </div>
     );
   }
 
   return (
-    <div className="overflow-auto rounded-lg border border-[var(--border)]">
+    <div className="table-shell overflow-auto">
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow className="pointer-events-none hover:bg-transparent">
             <TableHead>Firma</TableHead>
             <TableHead>Domain</TableHead>
             <TableHead>Score</TableHead>

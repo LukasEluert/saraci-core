@@ -155,7 +155,7 @@ function IndustriesTab({
         </Button>
       </div>
 
-      <div className="overflow-auto rounded-lg border border-[var(--border)]">
+      <div className="table-shell overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -358,7 +358,7 @@ function RegionsTab({ initial }: { initial: RegionSetting[] }) {
         </Button>
       </div>
 
-      <div className="overflow-auto rounded-lg border border-[var(--border)]">
+      <div className="table-shell overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -529,7 +529,7 @@ function ScoreRulesTab({ initial }: { initial: ScoreRuleSetting[] }) {
   }
 
   return (
-    <div className="overflow-auto rounded-lg border border-[var(--border)]">
+    <div className="table-shell overflow-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -644,10 +644,28 @@ export function SettingsWorkspace({
 }) {
   return (
     <Tabs defaultValue="industries" className="w-full">
-      <TabsList>
-        <TabsTrigger value="industries">Branchen</TabsTrigger>
-        <TabsTrigger value="regions">Regionen</TabsTrigger>
-        <TabsTrigger value="score-rules">Score-Regeln</TabsTrigger>
+      <TabsList
+        variant="line"
+        className="h-auto w-full justify-start gap-0 rounded-none border-b border-[var(--border)] bg-transparent p-0"
+      >
+        <TabsTrigger
+          value="industries"
+          className="rounded-none border-0 border-b-2 border-transparent px-4 py-3 text-[var(--text-tertiary)] data-active:border-[var(--accent)] data-active:bg-transparent data-active:text-[var(--text-primary)] data-active:shadow-none after:hidden"
+        >
+          Branchen
+        </TabsTrigger>
+        <TabsTrigger
+          value="regions"
+          className="rounded-none border-0 border-b-2 border-transparent px-4 py-3 text-[var(--text-tertiary)] data-active:border-[var(--accent)] data-active:bg-transparent data-active:text-[var(--text-primary)] data-active:shadow-none after:hidden"
+        >
+          Regionen
+        </TabsTrigger>
+        <TabsTrigger
+          value="score-rules"
+          className="rounded-none border-0 border-b-2 border-transparent px-4 py-3 text-[var(--text-tertiary)] data-active:border-[var(--accent)] data-active:bg-transparent data-active:text-[var(--text-primary)] data-active:shadow-none after:hidden"
+        >
+          Score-Regeln
+        </TabsTrigger>
       </TabsList>
       <TabsContent value="industries" className="mt-4">
         <IndustriesTab initial={industries} />

@@ -36,7 +36,7 @@ export default async function EinstellungenPage() {
 
       <div className="space-y-2">
         <div className="label-caps">Account</div>
-        <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] p-4">
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] p-5">
           <div className="text-sm text-[var(--text-secondary)]">E-Mail</div>
           <div className="mt-1 font-mono text-sm text-[var(--text-primary)]">
             {user?.email ?? "—"}

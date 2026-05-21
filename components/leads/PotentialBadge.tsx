@@ -1,12 +1,6 @@
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { BADGE_BASE, POTENTIAL_BADGE_STYLES } from "@/lib/ui/badge-styles";
 import type { LeadPotential } from "@/lib/leads/types";
-
-const STYLES: Record<LeadPotential, string> = {
-  high: "bg-red-500 text-white",
-  medium: "bg-yellow-500 text-black",
-  low: "bg-green-500 text-white",
-};
 
 const LABELS: Record<LeadPotential, string> = {
   high: "Hoch",
@@ -20,12 +14,12 @@ export function PotentialBadge({
   potential: LeadPotential | null;
 }) {
   if (!potential) {
-    return <span className="text-[var(--text-tertiary)]">—</span>;
+    return <span className="text-xs text-[var(--text-muted)]">—</span>;
   }
 
   return (
-    <Badge className={cn("border-0", STYLES[potential])}>
+    <span className={cn(BADGE_BASE, POTENTIAL_BADGE_STYLES[potential])}>
       {LABELS[potential]}
-    </Badge>
+    </span>
   );
 }

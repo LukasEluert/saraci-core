@@ -160,7 +160,7 @@ export function LeadActionsPanel({
           <span title={pdfTooltip} className="inline-block w-full">
             <Button
               size="sm"
-              className="w-full bg-[var(--accent)] text-white hover:opacity-90"
+              className="w-full"
               disabled={pending || !canExportPdf}
               onClick={() => {
                 window.open(

@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { CheckIcon, XIcon } from "lucide-react";
+import { CheckIcon, Search, XIcon } from "lucide-react";
+import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -215,7 +216,7 @@ function ResearchResultRowView({
               type="button"
               size="sm"
               disabled={pending}
-              className="border-green-600/40 bg-green-600/15 text-green-400 hover:bg-green-600/25"
+              className="border-green-500/30 bg-green-500/10 text-green-400 hover:bg-green-500/20"
               onClick={save}
             >
               {action === "save" && pending
@@ -268,17 +269,23 @@ export function ResearchResultsTable({
 }) {
   if (results.length === 0) {
     return (
-      <p className="text-sm text-[var(--text-secondary)]">
-        Keine Funde für diesen Job.
-      </p>
+      <div className="table-shell">
+        <TableEmptyState
+          icon={Search}
+          title="Keine Funde"
+          description="Für diesen Research-Job wurden keine passenden Unternehmen gefunden."
+          actionLabel="Neue Recherche"
+          actionHref="/research/new"
+        />
+      </div>
     );
   }
 
   return (
-    <div className="overflow-auto rounded-lg border border-[var(--border)]">
+    <div className="table-shell overflow-auto">
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow className="pointer-events-none hover:bg-transparent">
             <TableHead>Firma</TableHead>
             <TableHead>Website</TableHead>
             <TableHead>Adresse</TableHead>
