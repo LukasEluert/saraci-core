@@ -1,17 +1,19 @@
 import type { Metadata, Viewport } from "next";
-import { DM_Mono, DM_Sans } from "next/font/google";
+import { Inter, Inter_Tight } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 
-const dmSans = DM_Sans({
+const interSans = Inter({
   subsets: ["latin"],
-  variable: "--font-dm-sans",
+  variable: "--font-sans",
+  display: "swap",
 });
 
-const dmMono = DM_Mono({
+const interDisplay = Inter_Tight({
   subsets: ["latin"],
-  variable: "--font-dm-mono",
-  weight: ["400", "500"],
+  variable: "--font-display",
+  weight: ["500", "600", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -33,7 +35,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#060606",
+  themeColor: "#0a0a0a",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -47,7 +49,7 @@ export default function RootLayout({
   return (
     <html
       lang="de"
-      className={`dark h-full antialiased ${dmSans.variable} ${dmMono.variable}`}
+      className={`dark h-full antialiased ${interSans.variable} ${interDisplay.variable}`}
     >
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -57,10 +59,7 @@ export default function RootLayout({
           content="black-translucent"
         />
       </head>
-      <body
-        className="min-h-full flex flex-col bg-[var(--bg)] text-[var(--text-primary)]"
-        suppressHydrationWarning
-      >
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>
         {children}
         <Toaster theme="dark" richColors position="top-right" />
       </body>
