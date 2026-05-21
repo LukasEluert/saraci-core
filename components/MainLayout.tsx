@@ -1,20 +1,19 @@
-import {
-  AppShellHeader,
-  AppSidebarDesktop,
-  BottomNavMobile,
-} from "@/components/AppShell";
+import { AppSidebarDesktop } from "@/components/AppSidebar";
+import { MobileTopBar } from "@/components/MobileTopBar";
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-full">
+    <div className="min-h-[100dvh] bg-[var(--bg)]">
       <AppSidebarDesktop />
-      <div className="flex min-h-[100vh] flex-1 flex-col bg-[var(--bg)] pb-16 md:max-h-[100vh] md:overflow-hidden md:pb-0">
-        <AppShellHeader />
-        <main className="relative flex flex-1 flex-col overflow-auto overscroll-none md:h-0 md:min-h-0 md:flex-1">
-          {children}
+      <MobileTopBar />
+
+      <div className="flex min-h-[100dvh] flex-col lg:ml-[240px]">
+        <main className="relative flex min-h-0 flex-1 flex-col overflow-y-auto pt-14 lg:pt-0">
+          <div className="mx-auto w-full max-w-[1400px] flex-1 p-4 lg:px-12 lg:py-8">
+            {children}
+          </div>
         </main>
       </div>
-      <BottomNavMobile />
     </div>
   );
 }
