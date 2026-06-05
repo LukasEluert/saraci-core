@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { requireAdminApi } from "@/lib/auth/apiGuard";
 import { LEAD_STATUS_SET } from "@/lib/leads/constants";
 import { emitLeadQualified } from "@/lib/leads/events";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -18,6 +19,9 @@ const patchSchema = z.object({
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function PATCH(req: Request, context: RouteContext) {
+  const denied = await requireAdminApi();
+  if (denied) return denied;
+
   const { id } = await context.params;
 
   let json: unknown;
@@ -75,6 +79,9 @@ export async function PATCH(req: Request, context: RouteContext) {
 }
 
 export async function DELETE(_req: Request, context: RouteContext) {
+  const denied = await requireAdminApi();
+  if (denied) return denied;
+
   const { id } = await context.params;
   const supabase = createAdminClient();
 

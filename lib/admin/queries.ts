@@ -1,0 +1,59 @@
+import "server-only";
+import { createAdminClient } from "@/lib/supabase/admin";
+import type { Role } from "@/lib/auth/profile";
+
+export interface AdminUser {
+  id: string;
+  role: Role;
+  full_name: string | null;
+  calendar_token: string;
+  email: string | null;
+  created_at: string | null;
+}
+
+export interface AssignableLead {
+  id: string;
+  firma: string | null;
+  branche: string | null;
+  region: string | null;
+  domain: string;
+  assigned_to: string | null;
+  akquise_status: string | null;
+}
+
+export async function listUsers(): Promise<AdminUser[]> {
+  const admin = createAdminClient();
+
+  const { data: profiles, error } = await admin
+    .from("profiles")
+    .select("id, role, full_name, calendar_token, created_at")
+    .order("created_at", { ascending: true });
+
+  if (error) throw new Error(error.message);
+
+  const { data: authUsers } = await admin.auth.admin.listUsers();
+  const emailById = new Map(
+    (authUsers?.users ?? []).map((u) => [u.id, u.email ?? null])
+  );
+
+  return (profiles ?? []).map((p) => ({
+    id: p.id,
+    role: (p.role as Role) ?? "vertrieb",
+    full_name: p.full_name ?? null,
+    calendar_token: p.calendar_token as string,
+    email: emailById.get(p.id) ?? null,
+    created_at: p.created_at ?? null,
+  }));
+}
+
+export async function listAllLeadsForAssignment(): Promise<AssignableLead[]> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("leads")
+    .select("id, firma, branche, region, domain, assigned_to, akquise_status")
+    .order("firma", { ascending: true, nullsFirst: false })
+    .limit(2000);
+
+  if (error) throw new Error(error.message);
+  return (data ?? []) as AssignableLead[];
+}

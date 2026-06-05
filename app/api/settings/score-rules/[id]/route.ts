@@ -5,6 +5,7 @@ import {
   SCORE_RULE_CATEGORIES,
   SCORE_RULE_SEVERITIES,
 } from "@/lib/settings/constants";
+import { requireAdminApi } from "@/lib/auth/apiGuard";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
@@ -20,6 +21,9 @@ const patchSchema = z.object({
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function PATCH(req: Request, context: RouteContext) {
+  const denied = await requireAdminApi();
+  if (denied) return denied;
+
   const { id } = await context.params;
 
   let json: unknown;

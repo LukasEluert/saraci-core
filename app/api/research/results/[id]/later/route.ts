@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdminApi } from "@/lib/auth/apiGuard";
 import { deferResearchResult } from "@/lib/research/resultActions";
 
 export const runtime = "nodejs";
@@ -7,6 +8,9 @@ export const maxDuration = 120;
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function POST(_req: Request, context: RouteContext) {
+  const denied = await requireAdminApi();
+  if (denied) return denied;
+
   const { id } = await context.params;
 
   try {

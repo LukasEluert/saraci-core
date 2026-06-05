@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { requireAdminApi } from "@/lib/auth/apiGuard";
 import { slugFromName } from "@/lib/settings/slug";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -15,6 +16,9 @@ const postSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  const denied = await requireAdminApi();
+  if (denied) return denied;
+
   let json: unknown;
   try {
     json = await req.json();

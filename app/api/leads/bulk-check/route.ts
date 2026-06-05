@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { requireAdminApi } from "@/lib/auth/apiGuard";
 import { emitCheckRequested } from "@/lib/leads/events";
 import { triggerProcessQueue } from "@/lib/leads/queue";
 import { getLeadForCheck } from "@/lib/leads/queries";
@@ -11,6 +12,9 @@ const bodySchema = z.object({
 });
 
 export async function POST(req: Request) {
+  const denied = await requireAdminApi();
+  if (denied) return denied;
+
   let json: unknown;
   try {
     json = await req.json();

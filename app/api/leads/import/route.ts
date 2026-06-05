@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import Papa from "papaparse";
+import { requireAdminApi } from "@/lib/auth/apiGuard";
 import { createLeadRecord, DuplicateLeadError } from "@/lib/leads/createLead";
 import { emitCheckRequested } from "@/lib/leads/events";
 import { resolveIndustryBySlug, resolveRegionBySlug } from "@/lib/leads/lookup";
@@ -17,6 +18,9 @@ type CsvRow = {
 };
 
 export async function POST(req: Request) {
+  const denied = await requireAdminApi();
+  if (denied) return denied;
+
   const formData = await req.formData();
   const file = formData.get("file");
 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { requireAdminApi } from "@/lib/auth/apiGuard";
 import {
   createLeadWithOptionalCheck,
   DuplicateLeadError,
@@ -18,6 +19,9 @@ const postSchema = z.object({
 });
 
 export async function GET(req: Request) {
+  const denied = await requireAdminApi();
+  if (denied) return denied;
+
   const { searchParams } = new URL(req.url);
 
   const status = searchParams.getAll("status").filter(Boolean);
@@ -47,6 +51,9 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const denied = await requireAdminApi();
+  if (denied) return denied;
+
   let json: unknown;
   try {
     json = await req.json();

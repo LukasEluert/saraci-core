@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { requireAdminApi } from "@/lib/auth/apiGuard";
 import { saveResearchResultAsLead } from "@/lib/research/resultActions";
 
 export const runtime = "nodejs";
@@ -12,6 +13,9 @@ const bodySchema = z.object({
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function POST(req: Request, context: RouteContext) {
+  const denied = await requireAdminApi();
+  if (denied) return denied;
+
   const { id } = await context.params;
 
   let run_check: boolean | undefined;

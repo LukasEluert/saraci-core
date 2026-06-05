@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { APP_NAV, isNavActive } from "@/components/app-nav";
+import { activeNavHref, navForRole, type Role } from "@/components/app-nav";
 import { LogoutButton } from "@/components/LogoutButton";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -48,20 +48,24 @@ function SidebarFooter() {
 }
 
 export function AppSidebarContent({
+  role = "vertrieb",
   mobile = false,
   onNavigate,
 }: {
+  role?: Role;
   mobile?: boolean;
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
+  const items = navForRole(role);
+  const active = activeNavHref(pathname, items);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
       <SidebarBrand />
       <nav className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-0 py-3">
-        {APP_NAV.map((item) => {
-          const active = isNavActive(pathname, item.href);
+        {items.map((item) => {
+          const isActive = item.href === active;
           const Icon = item.icon;
 
           return (
@@ -72,7 +76,7 @@ export function AppSidebarContent({
               className={cn(
                 "focus-ring flex items-center gap-3 rounded-[6px] border-l-2 px-3 text-sm transition-colors",
                 mobile ? "min-h-12 py-2.5" : "py-2",
-                active
+                isActive
                   ? "border-[var(--accent)] bg-[var(--bg-elevated)] text-[var(--text-primary)]"
                   : "border-transparent text-[var(--text-tertiary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-secondary)]"
               )}
@@ -80,7 +84,7 @@ export function AppSidebarContent({
               <Icon
                 className={cn(
                   "size-[18px] shrink-0",
-                  active ? "text-[var(--text-primary)]" : "text-[var(--text-tertiary)]"
+                  isActive ? "text-[var(--text-primary)]" : "text-[var(--text-tertiary)]"
                 )}
                 strokeWidth={1.75}
                 aria-hidden
@@ -95,13 +99,13 @@ export function AppSidebarContent({
   );
 }
 
-export function AppSidebarDesktop() {
+export function AppSidebarDesktop({ role }: { role?: Role }) {
   return (
     <aside
       className="fixed inset-y-0 left-0 z-40 hidden w-[240px] flex-col border-r border-[var(--border)] bg-[var(--bg)] px-3 py-4 lg:flex"
       aria-label="Hauptnavigation"
     >
-      <AppSidebarContent />
+      <AppSidebarContent role={role} />
     </aside>
   );
 }

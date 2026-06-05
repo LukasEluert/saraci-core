@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { requireAdminApi } from "@/lib/auth/apiGuard";
 import { normalizeKeywordsField } from "@/lib/settings/keywords";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -15,6 +16,9 @@ const patchSchema = z.object({
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function PATCH(req: Request, context: RouteContext) {
+  const denied = await requireAdminApi();
+  if (denied) return denied;
+
   const { id } = await context.params;
 
   let json: unknown;

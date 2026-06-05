@@ -1,16 +1,10 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdminApi } from "@/lib/auth/apiGuard";
 import { runSiteCheck } from "@/lib/siteCheck";
 
 export async function POST(req: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Nicht angemeldet." }, { status: 401 });
-  }
+  const denied = await requireAdminApi();
+  if (denied) return denied;
 
   let body: unknown;
   try {

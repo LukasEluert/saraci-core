@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdminApi } from "@/lib/auth/apiGuard";
 import {
   generateInternalReportPdf,
   LeadReportPdfError,
@@ -10,6 +11,9 @@ export const maxDuration = 60;
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(_req: Request, context: RouteContext) {
+  const denied = await requireAdminApi();
+  if (denied) return denied;
+
   const { id } = await context.params;
 
   try {

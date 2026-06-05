@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { Menu } from "lucide-react";
 import { AppSidebarContent } from "@/components/AppSidebar";
+import type { Role } from "@/components/app-nav";
 import {
   Sheet,
   SheetContent,
   SheetTitle,
 } from "@/components/ui/sheet";
 
-export function MobileTopBar() {
+export function MobileTopBar({ role }: { role?: Role }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -43,6 +44,7 @@ export function MobileTopBar() {
         >
           <SheetTitle className="sr-only">Navigation</SheetTitle>
           <AppSidebarContent
+            role={role}
             mobile
             onNavigate={() => setOpen(false)}
           />

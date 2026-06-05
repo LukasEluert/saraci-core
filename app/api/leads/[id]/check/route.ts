@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdminApi } from "@/lib/auth/apiGuard";
 import { runWebsiteCheck } from "@/lib/core/checks";
 import { getLeadForCheck } from "@/lib/leads/queries";
 
@@ -8,6 +9,9 @@ export const maxDuration = 120;
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function POST(_req: Request, context: RouteContext) {
+  const denied = await requireAdminApi();
+  if (denied) return denied;
+
   const { id } = await context.params;
 
   const lead = await getLeadForCheck(id);
