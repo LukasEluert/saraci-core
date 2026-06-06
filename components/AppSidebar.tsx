@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -12,12 +13,16 @@ function SidebarBrand() {
   return (
     <Link
       href="/overview"
-      className="block border-b border-[var(--border)] px-3 py-4"
+      className="flex items-center border-b border-[var(--border)] px-3 py-4"
     >
-      <span className="inline-flex items-baseline gap-1 font-[family-name:var(--font-display)] text-sm font-bold tracking-wide text-[var(--text-primary)]">
-        <span>SARACI</span>
-        <span className="text-[var(--accent)]">CORE</span>
-      </span>
+      <Image
+        src="/logo-white.png"
+        alt="Saraci"
+        width={682}
+        height={556}
+        priority
+        className="h-9 w-auto"
+      />
     </Link>
   );
 }

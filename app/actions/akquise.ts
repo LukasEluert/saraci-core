@@ -132,6 +132,42 @@ export async function markAngebotRaus(leadId: string) {
   revalidatePath("/admin/uebersicht");
 }
 
+export async function setLeadArchived(leadId: string, archiviert: boolean) {
+  const { supabase } = await authedClient();
+  // RLS leads_update (Admin oder assigned_to = auth.uid()) gilt unveraendert.
+  const { error } = await supabase
+    .from("leads")
+    .update({ archiviert })
+    .eq("id", leadId);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/akquise");
+  revalidatePath(`/akquise/${leadId}`);
+  revalidatePath("/admin/uebersicht");
+}
+
+export async function deleteActivity(id: string, leadId: string) {
+  const { supabase } = await authedClient();
+  // RLS act_delete (Admin oder user_id = auth.uid()) entscheidet, ob geloescht wird.
+  const { error } = await supabase.from("activities").delete().eq("id", id);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/akquise/${leadId}`);
+}
+
+export async function deleteAppointment(id: string, leadId?: string) {
+  const { supabase } = await authedClient();
+  // RLS app_delete (Admin oder user_id = auth.uid()) entscheidet, ob geloescht wird.
+  const { error } = await supabase.from("appointments").delete().eq("id", id);
+
+  if (error) throw new Error(error.message);
+
+  if (leadId) revalidatePath(`/akquise/${leadId}`);
+  revalidatePath("/akquise/heute");
+}
+
 export async function logActivity(input: {
   leadId: string;
   typ: "anruf" | "mail" | "notiz";

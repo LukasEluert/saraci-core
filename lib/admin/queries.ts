@@ -51,6 +51,7 @@ export async function listAllLeadsForAssignment(): Promise<AssignableLead[]> {
   const { data, error } = await admin
     .from("leads")
     .select("id, firma, branche, region, domain, assigned_to, akquise_status")
+    .eq("archiviert", false)
     .order("firma", { ascending: true, nullsFirst: false })
     .limit(2000);
 

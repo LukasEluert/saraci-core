@@ -5,6 +5,7 @@ import { listOpenAppointments } from "@/lib/akquise/queries";
 import { formatDateTime } from "@/lib/leads/format";
 import { SubscribeButton } from "@/components/akquise/SubscribeButton";
 import { AppointmentToggle } from "@/components/akquise/AppointmentToggle";
+import { DeleteAppointmentButton } from "@/components/akquise/DeleteAppointmentButton";
 import type { AppointmentWithLead } from "@/lib/akquise/types";
 
 export const metadata: Metadata = { title: "Heute" };
@@ -128,7 +129,10 @@ function Section({
                 )}
               </div>
             </div>
-            <AppointmentToggle id={appt.id} erledigt={appt.erledigt} />
+            <div className="flex shrink-0 items-center gap-1">
+              <AppointmentToggle id={appt.id} erledigt={appt.erledigt} />
+              <DeleteAppointmentButton id={appt.id} leadId={appt.lead?.id} />
+            </div>
           </li>
         ))}
       </ul>

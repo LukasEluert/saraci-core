@@ -39,9 +39,6 @@ export function LoginForm() {
         SARACI <span className="text-[var(--accent)]">CORE</span>
       </div>
       <div className="mt-3 text-xl font-medium tracking-tight text-[var(--text-primary)]">Anmelden</div>
-      <div className="mt-2 text-sm text-[var(--text-secondary)]">
-        Nutze denselben Supabase-Account wie bei Saraci Desk.
-      </div>
 
       <form className="mt-6 space-y-4" onSubmit={(e) => void submit(e)}>
         <label className="block space-y-1">

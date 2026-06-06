@@ -5,6 +5,7 @@ import { listAssignedLeads } from "@/lib/akquise/queries";
 import { StatusSelect } from "@/components/akquise/StatusSelect";
 import { SubscribeButton } from "@/components/akquise/SubscribeButton";
 import { NewLeadDialog } from "@/components/akquise/NewLeadDialog";
+import { ArchiveLeadButton } from "@/components/akquise/ArchiveLeadButton";
 
 export const metadata: Metadata = { title: "Akquise" };
 export const dynamic = "force-dynamic";
@@ -20,24 +21,41 @@ function websiteHref(domain: string): string {
 export default async function AkquisePage({ searchParams }: PageProps) {
   const params = await searchParams;
   const q = typeof params.q === "string" ? params.q : undefined;
+  const showArchived = params.archiv === "1";
 
   const [leads, profile] = await Promise.all([
-    listAssignedLeads(q),
+    listAssignedLeads(q, { archived: showArchived }),
     getCurrentProfile(),
   ]);
+
+  const toggleHref = showArchived
+    ? q
+      ? `/akquise?q=${encodeURIComponent(q)}`
+      : "/akquise"
+    : q
+      ? `/akquise?archiv=1&q=${encodeURIComponent(q)}`
+      : "/akquise?archiv=1";
 
   return (
     <div className="flex h-full flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="label-caps">Akquise</div>
-          <h1 className="text-xl font-medium tracking-tight">Meine Leads</h1>
+          <h1 className="text-xl font-medium tracking-tight">
+            {showArchived ? "Archiv" : "Meine Leads"}
+          </h1>
           <p className="text-sm text-[var(--text-secondary)]">
             {leads.length} {leads.length === 1 ? "Eintrag" : "Einträge"}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <NewLeadDialog />
+          <Link
+            href={toggleHref}
+            className="focus-ring rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          >
+            {showArchived ? "Aktive Leads" : "Archiv"}
+          </Link>
+          {!showArchived && <NewLeadDialog />}
           {profile && <SubscribeButton token={profile.calendar_token} />}
         </div>
       </div>
@@ -69,6 +87,7 @@ export default async function AkquisePage({ searchParams }: PageProps) {
               <th className="hidden xl:table-cell">Mail</th>
               <th className="hidden lg:table-cell">Website</th>
               <th className="hidden xl:table-cell">Notiz</th>
+              {showArchived && <th className="text-right">Aktion</th>}
             </tr>
           </thead>
           <tbody>
@@ -140,13 +159,20 @@ export default async function AkquisePage({ searchParams }: PageProps) {
                     {lead.notiz || "—"}
                   </span>
                 </td>
+                {showArchived && (
+                  <td className="text-right">
+                    <div className="flex justify-end">
+                      <ArchiveLeadButton leadId={lead.id} archiviert />
+                    </div>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
         </table>
         {leads.length === 0 && (
           <div className="p-10 text-center text-sm text-[var(--text-secondary)]">
-            Keine zugewiesenen Leads.
+            {showArchived ? "Keine archivierten Leads." : "Keine zugewiesenen Leads."}
           </div>
         )}
       </div>

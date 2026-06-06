@@ -14,6 +14,9 @@ import { AppointmentToggle } from "@/components/akquise/AppointmentToggle";
 import { LeadContactCard } from "@/components/akquise/LeadContactCard";
 import { LeadNotizCard } from "@/components/akquise/LeadNotizCard";
 import { ActionFlagControl } from "@/components/akquise/ActionFlagControl";
+import { ArchiveLeadButton } from "@/components/akquise/ArchiveLeadButton";
+import { DeleteActivityButton } from "@/components/akquise/DeleteActivityButton";
+import { DeleteAppointmentButton } from "@/components/akquise/DeleteAppointmentButton";
 
 export const metadata: Metadata = { title: "Lead" };
 export const dynamic = "force-dynamic";
@@ -37,6 +40,12 @@ export default async function AkquiseLeadPage({ params }: PageProps) {
       >
         ← Meine Leads
       </Link>
+
+      {lead.archiviert && (
+        <div className="rounded-md border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-300">
+          Dieser Lead ist archiviert und erscheint nicht in der Standard-Liste.
+        </div>
+      )}
 
       <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
         <div className="flex min-w-0 flex-col gap-6">
@@ -108,8 +117,11 @@ export default async function AkquiseLeadPage({ params }: PageProps) {
                             </span>
                           ) : null}
                         </span>
-                        <span className="shrink-0 text-xs text-[var(--text-tertiary)]">
-                          {formatDateTime(a.created_at)}
+                        <span className="flex shrink-0 items-center gap-1">
+                          <span className="text-xs text-[var(--text-tertiary)]">
+                            {formatDateTime(a.created_at)}
+                          </span>
+                          <DeleteActivityButton id={a.id} leadId={lead.id} />
                         </span>
                       </div>
                       {a.notiz && (
@@ -180,11 +192,27 @@ export default async function AkquiseLeadPage({ params }: PageProps) {
                           {formatDateTime(appt.faellig_am)}
                         </div>
                       </div>
-                      <AppointmentToggle id={appt.id} erledigt={appt.erledigt} />
+                      <div className="flex shrink-0 items-center gap-1">
+                        <AppointmentToggle id={appt.id} erledigt={appt.erledigt} />
+                        <DeleteAppointmentButton id={appt.id} leadId={lead.id} />
+                      </div>
                     </li>
                   ))}
                 </ul>
               )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Lead verwalten</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-[var(--text-secondary)]">
+                Archivieren blendet den Lead aus den Listen aus, ohne Kontakt und
+                Historie zu loeschen.
+              </p>
+              <ArchiveLeadButton leadId={lead.id} archiviert={lead.archiviert} />
             </CardContent>
           </Card>
         </aside>
