@@ -18,14 +18,23 @@ export const AKQUISE_STATUS_LABELS: Record<string, string> = Object.fromEntries(
   AKQUISE_STATUS.map((s) => [s.value, s.label])
 );
 
+// Farbhierarchie: heisse Leads ziehen das Auge, tote Leads treten zurueck.
+// Eine zentrale Stelle - Badge und Status-Dropdown lesen beide hieraus.
 export const AKQUISE_STATUS_STYLES: Record<AkquiseStatus, string> = {
-  offen: "bg-neutral-500/10 text-neutral-300 border-neutral-500/30",
-  nicht_erreicht: "bg-yellow-500/10 text-yellow-400 border-yellow-500/30",
-  rueckruf_vereinbart: "bg-blue-500/10 text-blue-400 border-blue-500/30",
-  interesse: "bg-purple-500/10 text-purple-400 border-purple-500/30",
-  angebot_raus: "bg-cyan-500/10 text-cyan-300 border-cyan-500/30",
-  kein_interesse: "bg-red-500/10 text-red-400 border-red-500/30",
-  kunde: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
+  // Heiss -> warme/kraeftige Farbe, maximal sichtbar
+  interesse: "bg-green-500/15 text-green-300 border-green-500/40",
+  // Fest verabredet -> blau
+  rueckruf_vereinbart: "bg-blue-500/15 text-blue-300 border-blue-500/40",
+  // Wartet auf Kundenantwort -> amber
+  angebot_raus: "bg-amber-500/15 text-amber-300 border-amber-500/40",
+  // Gewonnen -> eigener Akzent (violett), klar abgesetzt
+  kunde: "bg-violet-500/15 text-violet-300 border-violet-500/40",
+  // Noch zu tun -> neutral, aber aktiv (heller Text/Rand)
+  offen: "bg-neutral-400/10 text-[var(--text-secondary)] border-neutral-400/30",
+  // Neutral, kein Alarm -> gedaempftes Grau
+  nicht_erreicht: "bg-neutral-500/10 text-neutral-400 border-neutral-500/25",
+  // Tot -> zurueckgenommen, niedriger Kontrast (aber lesbar), darf nicht knallen
+  kein_interesse: "bg-neutral-500/5 text-neutral-500 border-neutral-500/20",
 };
 
 export const LEAD_AKTION: { value: LeadAktion; label: string }[] = [

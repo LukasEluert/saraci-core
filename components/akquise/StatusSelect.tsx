@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { setAkquiseStatus } from "@/app/actions/akquise";
-import { AKQUISE_STATUS } from "@/lib/akquise/constants";
+import { AKQUISE_STATUS, AKQUISE_STATUS_STYLES } from "@/lib/akquise/constants";
 import type { AkquiseStatus } from "@/lib/akquise/types";
 import { cn } from "@/lib/utils";
 
@@ -42,7 +42,8 @@ export function StatusSelect({
         });
       }}
       className={cn(
-        "focus-ring rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] px-2 py-1 text-xs text-[var(--text-primary)] disabled:opacity-50",
+        "focus-ring rounded-md border px-2 py-1 text-xs font-medium disabled:opacity-50",
+        AKQUISE_STATUS_STYLES[status],
         className
       )}
     >
