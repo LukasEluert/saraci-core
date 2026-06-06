@@ -10,7 +10,7 @@ import type {
 
 // Bewusst ohne created_by/assigned_to-Filter: die Trennung passiert ueber RLS.
 const LEAD_FIELDS =
-  "id, firma, branche, region, domain, telefon, email, akquise_status, assigned_to, notiz, aktion_benoetigt, aktion_notiz, aktion_seit, archiviert, created_at";
+  "id, firma, branche, region, domain, telefon, email, akquise_status, assigned_to, notiz, aktion_benoetigt, aktion_notiz, aktion_seit, bearbeitung_von, bearbeitung_seit, archiviert, created_at";
 
 export async function listAssignedLeads(
   q?: string,

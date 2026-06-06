@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAkquiseLead } from "@/lib/akquise/queries";
+import { getCurrentProfile } from "@/lib/auth/profile";
+import { resolveUserNames } from "@/lib/admin/queries";
 import { formatDateTime } from "@/lib/leads/format";
 import {
   ACTIVITY_TYPE_LABELS,
@@ -17,6 +19,8 @@ import { ActionFlagControl } from "@/components/akquise/ActionFlagControl";
 import { ArchiveLeadButton } from "@/components/akquise/ArchiveLeadButton";
 import { DeleteActivityButton } from "@/components/akquise/DeleteActivityButton";
 import { DeleteAppointmentButton } from "@/components/akquise/DeleteAppointmentButton";
+import { BearbeitungBadge } from "@/components/akquise/BearbeitungBadge";
+import { BearbeitungControl } from "@/components/akquise/BearbeitungControl";
 
 export const metadata: Metadata = { title: "Lead" };
 export const dynamic = "force-dynamic";
@@ -29,8 +33,16 @@ function websiteHref(domain: string): string {
 
 export default async function AkquiseLeadPage({ params }: PageProps) {
   const { id } = await params;
-  const lead = await getAkquiseLead(id);
+  const [lead, profile] = await Promise.all([
+    getAkquiseLead(id),
+    getCurrentProfile(),
+  ]);
   if (!lead) notFound();
+
+  const isAdmin = profile?.role === "admin";
+  const bearbeiterName = lead.bearbeitung_von
+    ? (await resolveUserNames([lead.bearbeitung_von]))[lead.bearbeitung_von] ?? null
+    : null;
 
   return (
     <div className="space-y-6">
@@ -70,6 +82,7 @@ export default async function AkquiseLeadPage({ params }: PageProps) {
             <div className="flex flex-wrap items-center gap-2 pt-1">
               <span className="label-caps">Status</span>
               <StatusSelect leadId={lead.id} value={lead.akquise_status} />
+              {lead.bearbeitung_von && <BearbeitungBadge name={bearbeiterName} />}
             </div>
           </header>
 
@@ -138,6 +151,23 @@ export default async function AkquiseLeadPage({ params }: PageProps) {
         </div>
 
         <aside className="flex w-full shrink-0 flex-col gap-6 lg:w-[340px]">
+          {isAdmin && profile && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Bearbeitung</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <BearbeitungControl
+                  leadId={lead.id}
+                  bearbeitungVon={lead.bearbeitung_von}
+                  bearbeitungSeit={lead.bearbeitung_seit}
+                  currentUserId={profile.id}
+                  bearbeiterName={bearbeiterName}
+                />
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle>Aktion</CardTitle>

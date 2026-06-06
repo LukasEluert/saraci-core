@@ -16,6 +16,19 @@ async function authedClient() {
   return { supabase, user };
 }
 
+// "Uebernehmen"/"Freigeben" sind Admin-Aktionen. RLS bleibt unangetastet;
+// dieser Check verhindert nur, dass die Action selbst von Vertrieb genutzt wird.
+async function adminClient() {
+  const { supabase, user } = await authedClient();
+  const { data } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (data?.role !== "admin") throw new Error("Nur Admin.");
+  return { supabase, user };
+}
+
 export async function createAkquiseLead(input: {
   firma: string;
   branche?: string;
@@ -114,6 +127,37 @@ export async function setLeadAktion(input: {
   revalidatePath("/admin/uebersicht");
 }
 
+export async function leadUebernehmen(leadId: string) {
+  const { supabase, user } = await adminClient();
+  const { error } = await supabase
+    .from("leads")
+    .update({
+      bearbeitung_von: user.id,
+      bearbeitung_seit: new Date().toISOString(),
+    })
+    .eq("id", leadId);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/akquise");
+  revalidatePath(`/akquise/${leadId}`);
+  revalidatePath("/admin/uebersicht");
+}
+
+export async function leadFreigeben(leadId: string) {
+  const { supabase } = await adminClient();
+  const { error } = await supabase
+    .from("leads")
+    .update({ bearbeitung_von: null, bearbeitung_seit: null })
+    .eq("id", leadId);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/akquise");
+  revalidatePath(`/akquise/${leadId}`);
+  revalidatePath("/admin/uebersicht");
+}
+
 export async function markAngebotRaus(leadId: string) {
   const { supabase } = await authedClient();
   const { error } = await supabase
@@ -122,6 +166,9 @@ export async function markAngebotRaus(leadId: string) {
       aktion_benoetigt: "keine",
       aktion_seit: null,
       akquise_status: "angebot_raus",
+      // Angebot ist raus -> nicht mehr "in Arbeit".
+      bearbeitung_von: null,
+      bearbeitung_seit: null,
     })
     .eq("id", leadId);
 

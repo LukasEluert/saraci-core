@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { Mail, Phone } from "lucide-react";
 import { AkquiseStatusBadge } from "@/components/akquise/AkquiseStatusBadge";
 import { ArchiveLeadButton } from "@/components/akquise/ArchiveLeadButton";
+import { BearbeitungBadge } from "@/components/akquise/BearbeitungBadge";
 import type { AkquiseLead } from "@/lib/akquise/types";
 
 // Mobile-Ansicht der Lead-Liste: nach der Kern-Taetigkeit "anrufen" gebaut.
@@ -11,9 +12,11 @@ import type { AkquiseLead } from "@/lib/akquise/types";
 export function LeadCard({
   lead,
   archived = false,
+  bearbeiterName = null,
 }: {
   lead: AkquiseLead;
   archived?: boolean;
+  bearbeiterName?: string | null;
 }) {
   const router = useRouter();
 
@@ -43,6 +46,10 @@ export function LeadCard({
 
       {meta && (
         <p className="-mt-1 truncate text-sm text-[var(--text-tertiary)]">{meta}</p>
+      )}
+
+      {lead.bearbeitung_von && (
+        <BearbeitungBadge name={bearbeiterName} className="w-fit" />
       )}
 
       {lead.notiz && (

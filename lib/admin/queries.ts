@@ -46,6 +46,28 @@ export async function listUsers(): Promise<AdminUser[]> {
   }));
 }
 
+/**
+ * Loest User-IDs zu Anzeigenamen (full_name) auf - server-only, read-only.
+ * Noetig, weil RLS dem Vertrieb fremde profiles-Zeilen verbirgt; hier wird
+ * ausschliesslich der Anzeigename fuer das "in Bearbeitung"-Badge geholt.
+ */
+export async function resolveUserNames(
+  ids: string[]
+): Promise<Record<string, string | null>> {
+  const unique = Array.from(new Set(ids.filter(Boolean)));
+  if (unique.length === 0) return {};
+
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("profiles")
+    .select("id, full_name")
+    .in("id", unique);
+
+  return Object.fromEntries(
+    (data ?? []).map((p) => [p.id as string, (p.full_name as string) ?? null])
+  );
+}
+
 export async function listAllLeadsForAssignment(): Promise<AssignableLead[]> {
   const admin = createAdminClient();
   const { data, error } = await admin

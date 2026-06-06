@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getCurrentProfile } from "@/lib/auth/profile";
 import { listAssignedLeads } from "@/lib/akquise/queries";
+import { resolveUserNames } from "@/lib/admin/queries";
 import { StatusSelect } from "@/components/akquise/StatusSelect";
 import { SubscribeButton } from "@/components/akquise/SubscribeButton";
 import { NewLeadDialog } from "@/components/akquise/NewLeadDialog";
 import { ArchiveLeadButton } from "@/components/akquise/ArchiveLeadButton";
 import { LeadCard } from "@/components/akquise/LeadCard";
+import { BearbeitungBadge } from "@/components/akquise/BearbeitungBadge";
 
 export const metadata: Metadata = { title: "Akquise" };
 export const dynamic = "force-dynamic";
@@ -28,6 +30,10 @@ export default async function AkquisePage({ searchParams }: PageProps) {
     listAssignedLeads(q, { archived: showArchived }),
     getCurrentProfile(),
   ]);
+
+  const bearbeiterNames = await resolveUserNames(
+    leads.map((l) => l.bearbeitung_von).filter((v): v is string => !!v)
+  );
 
   const toggleHref = showArchived
     ? q
@@ -79,7 +85,14 @@ export default async function AkquisePage({ searchParams }: PageProps) {
       {/* Mobile (< md): Karten-Liste, auf "anrufen" optimiert */}
       <div className="min-h-0 flex-1 space-y-2 overflow-auto md:hidden">
         {leads.map((lead) => (
-          <LeadCard key={lead.id} lead={lead} archived={showArchived} />
+          <LeadCard
+            key={lead.id}
+            lead={lead}
+            archived={showArchived}
+            bearbeiterName={
+              lead.bearbeitung_von ? bearbeiterNames[lead.bearbeitung_von] ?? null : null
+            }
+          />
         ))}
         {leads.length === 0 && (
           <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-10 text-center text-sm text-[var(--text-secondary)]">
@@ -117,6 +130,13 @@ export default async function AkquisePage({ searchParams }: PageProps) {
                   >
                     {lead.firma || lead.domain}
                   </Link>
+                  {lead.bearbeitung_von && (
+                    <div className="mt-1">
+                      <BearbeitungBadge
+                        name={bearbeiterNames[lead.bearbeitung_von] ?? null}
+                      />
+                    </div>
+                  )}
                 </td>
                 <td className="hidden text-[var(--text-secondary)] md:table-cell">
                   {lead.branche || "—"}

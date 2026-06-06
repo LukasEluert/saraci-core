@@ -5,7 +5,12 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { BADGE_BASE } from "@/lib/ui/badge-styles";
-import { markAngebotRaus } from "@/app/actions/akquise";
+import {
+  leadFreigeben,
+  leadUebernehmen,
+  markAngebotRaus,
+} from "@/app/actions/akquise";
+import { BearbeitungBadge } from "@/components/akquise/BearbeitungBadge";
 import {
   AKQUISE_STATUS,
   LEAD_AKTION_BADGE,
@@ -18,6 +23,7 @@ type Props = {
   leads: AkquiseLead[];
   userLabels: Record<string, string>;
   lastActivity: Record<string, string>;
+  currentUserId: string;
 };
 
 const HOT_STATUS = new Set(["interesse", "rueckruf_vereinbart"]);
@@ -45,7 +51,12 @@ function daysSince(iso: string | null | undefined): number | null {
   return Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
 }
 
-export function AdminOverview({ leads, userLabels, lastActivity }: Props) {
+export function AdminOverview({
+  leads,
+  userLabels,
+  lastActivity,
+  currentUserId,
+}: Props) {
   const [status, setStatus] = useState("");
   const [branche, setBranche] = useState("");
   const [region, setRegion] = useState("");
@@ -117,6 +128,7 @@ export function AdminOverview({ leads, userLabels, lastActivity }: Props) {
             leads={handlungsbedarf}
             userLabels={userLabels}
             lastActivity={lastActivity}
+            currentUserId={currentUserId}
             highlight
           />
         )}
@@ -174,6 +186,7 @@ export function AdminOverview({ leads, userLabels, lastActivity }: Props) {
           leads={fullList}
           userLabels={userLabels}
           lastActivity={lastActivity}
+          currentUserId={currentUserId}
         />
       </section>
     </div>
@@ -209,11 +222,13 @@ function LeadTable({
   leads,
   userLabels,
   lastActivity,
+  currentUserId,
   highlight = false,
 }: {
   leads: AkquiseLead[];
   userLabels: Record<string, string>;
   lastActivity: Record<string, string>;
+  currentUserId: string;
   highlight?: boolean;
 }) {
   return (
@@ -238,6 +253,7 @@ function LeadTable({
               lead={lead}
               userLabels={userLabels}
               lastActivity={lastActivity}
+              currentUserId={currentUserId}
               highlight={highlight}
             />
           ))}
@@ -256,17 +272,37 @@ function LeadRow({
   lead,
   userLabels,
   lastActivity,
+  currentUserId,
   highlight,
 }: {
   lead: AkquiseLead;
   userLabels: Record<string, string>;
   lastActivity: Record<string, string>;
+  currentUserId: string;
   highlight: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const aktion = lead.aktion_benoetigt as LeadAktion;
   const days = daysSince(lastActivity[lead.id]);
+
+  const inArbeit = !!lead.bearbeitung_von;
+  const flagged = needsAction(lead);
+  const mine = lead.bearbeitung_von === currentUserId;
+  const bearbeiterName = lead.bearbeitung_von
+    ? userLabels[lead.bearbeitung_von] ?? "Unbekannt"
+    : null;
+
+  const run = (fn: () => Promise<unknown>, msg: string) =>
+    startTransition(async () => {
+      try {
+        await fn();
+        toast.success(msg);
+        router.refresh();
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Fehler");
+      }
+    });
 
   const open = () => router.push(`/akquise/${lead.id}`);
 
@@ -291,13 +327,16 @@ function LeadRow({
         <AkquiseStatusBadge status={lead.akquise_status} />
       </td>
       <td>
-        {aktion !== "keine" ? (
-          <span className={cn(BADGE_BASE, LEAD_AKTION_STYLES[aktion])}>
-            {LEAD_AKTION_BADGE[aktion]}
-          </span>
-        ) : (
-          <span className="text-[var(--text-tertiary)]">—</span>
-        )}
+        <div className="flex flex-col items-start gap-1">
+          {aktion !== "keine" ? (
+            <span className={cn(BADGE_BASE, LEAD_AKTION_STYLES[aktion])}>
+              {LEAD_AKTION_BADGE[aktion]}
+            </span>
+          ) : (
+            <span className="text-[var(--text-tertiary)]">—</span>
+          )}
+          {inArbeit && <BearbeitungBadge name={bearbeiterName} />}
+        </div>
       </td>
       <td className="hidden max-w-[240px] lg:table-cell">
         <span
@@ -317,26 +356,40 @@ function LeadRow({
         {days === null ? "—" : days === 0 ? "heute" : `${days} T`}
       </td>
       <td onClick={(e) => e.stopPropagation()}>
-        {aktion !== "keine" && (
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() =>
-              startTransition(async () => {
-                try {
-                  await markAngebotRaus(lead.id);
-                  toast.success("Erledigt");
-                  router.refresh();
-                } catch (err) {
-                  toast.error(err instanceof Error ? err.message : "Fehler");
-                }
-              })
-            }
-            className="focus-ring whitespace-nowrap rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50"
-          >
-            Angebot raus
-          </button>
-        )}
+        <div className="flex flex-wrap justify-end gap-1.5">
+          {!inArbeit && flagged && (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() =>
+                run(() => leadUebernehmen(lead.id), "Du bearbeitest diesen Lead")
+              }
+              className="focus-ring whitespace-nowrap rounded-md border border-sky-500/40 bg-sky-500/10 px-2.5 py-1 text-xs font-medium text-sky-300 hover:bg-sky-500/20 disabled:opacity-50"
+            >
+              Übernehmen
+            </button>
+          )}
+          {inArbeit && mine && (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => run(() => markAngebotRaus(lead.id), "Erledigt")}
+              className="focus-ring whitespace-nowrap rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50"
+            >
+              Angebot raus
+            </button>
+          )}
+          {inArbeit && (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => run(() => leadFreigeben(lead.id), "Freigegeben")}
+              className="focus-ring whitespace-nowrap rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] px-2.5 py-1 text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] disabled:opacity-50"
+            >
+              Freigeben
+            </button>
+          )}
+        </div>
       </td>
     </tr>
   );

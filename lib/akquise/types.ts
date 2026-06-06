@@ -25,6 +25,8 @@ export interface AkquiseLead {
   aktion_benoetigt: LeadAktion;
   aktion_notiz: string | null;
   aktion_seit: string | null;
+  bearbeitung_von: string | null;
+  bearbeitung_seit: string | null;
   archiviert: boolean;
   created_at: string | null;
 }
