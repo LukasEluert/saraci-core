@@ -6,6 +6,7 @@ import { StatusSelect } from "@/components/akquise/StatusSelect";
 import { SubscribeButton } from "@/components/akquise/SubscribeButton";
 import { NewLeadDialog } from "@/components/akquise/NewLeadDialog";
 import { ArchiveLeadButton } from "@/components/akquise/ArchiveLeadButton";
+import { LeadCard } from "@/components/akquise/LeadCard";
 
 export const metadata: Metadata = { title: "Akquise" };
 export const dynamic = "force-dynamic";
@@ -75,7 +76,20 @@ export default async function AkquisePage({ searchParams }: PageProps) {
         </button>
       </form>
 
-      <div className="min-h-0 flex-1 overflow-auto rounded-md border border-[var(--border)] bg-[var(--surface)]">
+      {/* Mobile (< md): Karten-Liste, auf "anrufen" optimiert */}
+      <div className="min-h-0 flex-1 space-y-2 overflow-auto md:hidden">
+        {leads.map((lead) => (
+          <LeadCard key={lead.id} lead={lead} archived={showArchived} />
+        ))}
+        {leads.length === 0 && (
+          <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-10 text-center text-sm text-[var(--text-secondary)]">
+            {showArchived ? "Keine archivierten Leads." : "Keine zugewiesenen Leads."}
+          </div>
+        )}
+      </div>
+
+      {/* Desktop (>= md): bestehende Tabelle unveraendert */}
+      <div className="hidden min-h-0 flex-1 overflow-auto rounded-md border border-[var(--border)] bg-[var(--surface)] md:block">
         <table className="w-full border-collapse text-left text-[13px] tracking-[-0.01em]">
           <thead className="sticky top-0 z-10 bg-[var(--surface-hover)]">
             <tr className="label-caps text-[10px] text-[var(--text-tertiary)] [&>th]:border-b [&>th]:border-[var(--border)] [&>th]:px-4 [&>th]:py-3 [&>th]:font-semibold">

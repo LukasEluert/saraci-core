@@ -34,8 +34,10 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const isLogin = pathname === "/login";
   const isApi = pathname.startsWith("/api");
+  // /dev-Seiten sind nur ausserhalb von Produktion auth-befreit.
+  // /api/dev ist ohnehin ueber isApi abgedeckt und durch assertDevToken geschuetzt.
   const isDev =
-    pathname.startsWith("/dev") || pathname.startsWith("/api/dev");
+    process.env.NODE_ENV !== "production" && pathname.startsWith("/dev");
 
   if (!user && !isLogin && !isApi && !isDev) {
     const url = request.nextUrl.clone();
