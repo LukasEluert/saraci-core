@@ -41,6 +41,9 @@ export async function listLeads(
 
   if (filters.status?.length) {
     query = query.in("status", filters.status);
+  } else if (!filters.includeDiscarded) {
+    // Verworfene/verlorene standardmaessig ausblenden; NULL bleibt sichtbar.
+    query = query.or("status.is.null,status.not.in.(lost,rejected)");
   }
 
   if (filters.potential?.length) {
@@ -61,8 +64,7 @@ export async function listLeads(
   }
 
   const { data, error, count } = await query
-    .order("score", { ascending: true, nullsFirst: false })
-    .order("created_at", { ascending: false })
+    .order("created_at", { ascending: true, nullsFirst: false })
     .range(offset, offset + limit - 1);
 
   if (error) {

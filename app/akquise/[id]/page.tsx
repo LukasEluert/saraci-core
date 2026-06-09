@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAkquiseLead } from "@/lib/akquise/queries";
 import { getCurrentProfile } from "@/lib/auth/profile";
 import { resolveUserNames } from "@/lib/admin/queries";
-import { formatDateTime } from "@/lib/leads/format";
+import { formatCreatedAtVerbose, formatDateTime } from "@/lib/leads/format";
 import {
   ACTIVITY_TYPE_LABELS,
 } from "@/lib/akquise/constants";
@@ -25,14 +25,24 @@ import { BearbeitungControl } from "@/components/akquise/BearbeitungControl";
 export const metadata: Metadata = { title: "Lead" };
 export const dynamic = "force-dynamic";
 
-type PageProps = { params: Promise<{ id: string }> };
+type PageProps = {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
 function websiteHref(domain: string): string {
   return domain.startsWith("http") ? domain : `https://${domain}`;
 }
 
-export default async function AkquiseLeadPage({ params }: PageProps) {
+export default async function AkquiseLeadPage({ params, searchParams }: PageProps) {
   const { id } = await params;
+  const { from } = await searchParams;
+  const back =
+    from === "handlungsbedarf"
+      ? { href: "/admin/uebersicht", label: "← Zurück zu Handlungsbedarf" }
+      : from === "heute"
+        ? { href: "/akquise/heute", label: "← Zurück zu Heute" }
+        : { href: "/akquise", label: "← Zurück zu Akquise" };
   const [lead, profile] = await Promise.all([
     getAkquiseLead(id),
     getCurrentProfile(),
@@ -47,10 +57,10 @@ export default async function AkquiseLeadPage({ params }: PageProps) {
   return (
     <div className="space-y-6">
       <Link
-        href="/akquise"
+        href={back.href}
         className="inline-block text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
       >
-        ← Meine Leads
+        {back.label}
       </Link>
 
       {lead.archiviert && (
@@ -84,6 +94,9 @@ export default async function AkquiseLeadPage({ params }: PageProps) {
               <StatusSelect leadId={lead.id} value={lead.akquise_status} />
               {lead.bearbeitung_von && <BearbeitungBadge name={bearbeiterName} />}
             </div>
+            <p className="text-xs text-[var(--text-tertiary)]">
+              Erstellt: {formatCreatedAtVerbose(lead.created_at)}
+            </p>
           </header>
 
           <Card>

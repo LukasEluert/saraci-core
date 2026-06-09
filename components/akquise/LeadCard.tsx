@@ -20,7 +20,7 @@ export function LeadCard({
 }) {
   const router = useRouter();
 
-  const open = () => router.push(`/akquise/${lead.id}`);
+  const open = () => router.push(`/akquise/${lead.id}?from=akquise`);
 
   const meta = [lead.branche, lead.region].filter(Boolean).join(" · ");
 

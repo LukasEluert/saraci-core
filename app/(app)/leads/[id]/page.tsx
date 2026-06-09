@@ -10,7 +10,7 @@ import { ScoreBreakdown } from "@/components/leads/ScoreBreakdown";
 import { StatusBadge } from "@/components/leads/StatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { formatDateTime } from "@/lib/leads/format";
+import { formatCreatedAtVerbose, formatDateTime } from "@/lib/leads/format";
 import { getLeadDetail } from "@/lib/leads/queries";
 import { listIndustries, listRegions } from "@/lib/leads/reference";
 import type { TriggeredRule } from "@/lib/core/checks/types";
@@ -19,10 +19,20 @@ export const metadata: Metadata = {
   title: "Lead",
 };
 
-type PageProps = { params: Promise<{ id: string }> };
+type PageProps = {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
-export default async function LeadDetailPage({ params }: PageProps) {
+export default async function LeadDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
+  const { from } = await searchParams;
+  const back =
+    from === "handlungsbedarf"
+      ? { href: "/admin/uebersicht", label: "← Zurück zu Handlungsbedarf" }
+      : from === "akquise"
+        ? { href: "/akquise", label: "← Zurück zu Akquise" }
+        : { href: "/leads", label: "← Zurück zu Leads" };
   const [lead, industries, regions] = await Promise.all([
     getLeadDetail(id),
     listIndustries(),
@@ -38,10 +48,10 @@ export default async function LeadDetailPage({ params }: PageProps) {
   return (
     <div className="space-y-6">
       <Link
-        href="/leads"
+        href={back.href}
         className="inline-block text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
       >
-        ← Leads
+        {back.label}
       </Link>
 
       <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
@@ -148,7 +158,7 @@ export default async function LeadDetailPage({ params }: PageProps) {
                   <dt className="font-medium text-[var(--text-tertiary)]">
                     Erstellt
                   </dt>
-                  <dd>{formatDateTime(lead.created_at)}</dd>
+                  <dd>{formatCreatedAtVerbose(lead.created_at)}</dd>
                 </div>
                 <div>
                   <dt className="font-medium text-[var(--text-tertiary)]">

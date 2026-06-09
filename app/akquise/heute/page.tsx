@@ -121,7 +121,7 @@ function Section({
                 <span>{formatDateTime(appt.faellig_am)}</span>
                 {appt.lead && (
                   <Link
-                    href={`/akquise/${appt.lead.id}`}
+                    href={`/akquise/${appt.lead.id}?from=heute`}
                     className="text-[var(--accent)] hover:underline"
                   >
                     {bucketLabel(appt.lead.firma, appt.lead.domain)}

@@ -304,7 +304,7 @@ function LeadRow({
       }
     });
 
-  const open = () => router.push(`/akquise/${lead.id}`);
+  const open = () => router.push(`/akquise/${lead.id}?from=handlungsbedarf`);
 
   return (
     <tr

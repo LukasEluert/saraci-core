@@ -12,7 +12,7 @@ import { TableEmptyState } from "@/components/ui/table-empty-state";
 import { PotentialBadge } from "@/components/leads/PotentialBadge";
 import { ScoreBadge } from "@/components/leads/ScoreBadge";
 import { StatusBadge } from "@/components/leads/StatusBadge";
-import { formatDateTime } from "@/lib/leads/format";
+import { formatCreatedAt, formatDateTime } from "@/lib/leads/format";
 import type { LeadListItem } from "@/lib/leads/types";
 
 export function LeadsTable({
@@ -48,6 +48,7 @@ export function LeadsTable({
             <TableHead>Status</TableHead>
             <TableHead className="hidden md:table-cell">Letzter Check</TableHead>
             <TableHead className="hidden lg:table-cell">Nächster Schritt</TableHead>
+            <TableHead>Erstellt</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -56,7 +57,10 @@ export function LeadsTable({
             return (
               <TableRow key={lead.id} className="cursor-pointer">
                 <TableCell>
-                  <Link href={`/leads/${lead.id}`} className="block font-medium">
+                  <Link
+                    href={`/leads/${lead.id}?from=leads`}
+                    className="block font-medium"
+                  >
                     {lead.firma ?? "—"}
                     {pending && (
                       <span className="ml-2 text-xs text-yellow-400">
@@ -66,7 +70,7 @@ export function LeadsTable({
                   </Link>
                 </TableCell>
                 <TableCell className="font-mono text-xs text-[var(--text-secondary)]">
-                  <Link href={`/leads/${lead.id}`} className="block">
+                  <Link href={`/leads/${lead.id}?from=leads`} className="block">
                     {lead.normalized_domain ?? lead.domain}
                   </Link>
                 </TableCell>
@@ -84,6 +88,9 @@ export function LeadsTable({
                 </TableCell>
                 <TableCell className="hidden max-w-[200px] truncate text-xs text-[var(--text-secondary)] lg:table-cell">
                   {lead.naechster_schritt ?? "—"}
+                </TableCell>
+                <TableCell className="whitespace-nowrap text-xs text-[var(--text-secondary)]">
+                  {formatCreatedAt(lead.created_at)}
                 </TableCell>
               </TableRow>
             );

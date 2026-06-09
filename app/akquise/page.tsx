@@ -125,7 +125,7 @@ export default async function AkquisePage({ searchParams }: PageProps) {
               >
                 <td className="font-medium text-[var(--text-primary)]">
                   <Link
-                    href={`/akquise/${lead.id}`}
+                    href={`/akquise/${lead.id}?from=akquise`}
                     className="hover:text-[var(--accent)] hover:underline"
                   >
                     {lead.firma || lead.domain}

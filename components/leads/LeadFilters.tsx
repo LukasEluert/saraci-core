@@ -40,6 +40,7 @@ export function LeadFilters() {
   const q = searchParams.get("q") ?? "";
   const scoreMin = searchParams.get("score_min") ?? "";
   const scoreMax = searchParams.get("score_max") ?? "";
+  const archived = searchParams.get("archived") === "1";
 
   return (
     <div className="filter-bar grid gap-3 md:grid-cols-2 lg:grid-cols-5">
@@ -123,6 +124,21 @@ export function LeadFilters() {
           placeholder="Firma oder Domain"
           className="h-8"
         />
+      </div>
+
+      <div className="flex items-end md:col-span-2 lg:col-span-5">
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-[var(--text-secondary)]">
+          <input
+            type="checkbox"
+            checked={archived}
+            disabled={pending}
+            onChange={(e) =>
+              updateParams({ archived: e.target.checked ? "1" : null })
+            }
+            className="h-4 w-4 rounded border border-[var(--border)] bg-[var(--surface)] accent-[var(--accent)]"
+          />
+          Auch verworfene anzeigen
+        </label>
       </div>
     </div>
   );

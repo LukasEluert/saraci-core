@@ -22,7 +22,8 @@ export async function listAssignedLeads(
     .select(LEAD_FIELDS)
     // Standard: nur aktive Leads. archived=true zeigt das Archiv.
     .eq("archiviert", opts?.archived ?? false)
-    .order("firma", { ascending: true, nullsFirst: false });
+    // Aelteste zuerst: was am laengsten liegt, zuerst abarbeiten.
+    .order("created_at", { ascending: true, nullsFirst: false });
 
   if (q?.trim()) {
     const t = `%${q.trim()}%`;
