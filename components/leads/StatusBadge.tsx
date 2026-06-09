@@ -19,14 +19,20 @@ const STATUS_LABELS: Record<string, string> = {
   lost: "Verloren",
   rejected: "Verworfen",
   later: "Später",
-  neu: "Neu",
 };
 
 export function StatusBadge({ status }: { status: string | null }) {
-  const key = (status ?? "new").toLowerCase();
+  if (!status) {
+    return (
+      <span className={cn(BADGE_BASE, STATUS_STYLES.new)}>
+        —
+      </span>
+    );
+  }
+  const key = status.toLowerCase();
   return (
     <span className={cn(BADGE_BASE, STATUS_STYLES[key] ?? STATUS_STYLES.new)}>
-      {STATUS_LABELS[key] ?? status ?? "—"}
+      {STATUS_LABELS[key] ?? "—"}
     </span>
   );
 }

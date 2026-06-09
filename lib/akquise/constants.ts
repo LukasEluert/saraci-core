@@ -4,6 +4,7 @@ export const AKQUISE_STATUS: { value: AkquiseStatus; label: string }[] = [
   { value: "offen", label: "Offen" },
   { value: "nicht_erreicht", label: "Nicht erreicht" },
   { value: "rueckruf_vereinbart", label: "Rückruf vereinbart" },
+  { value: "rueckruf_offen", label: "Rückruf offen" },
   { value: "interesse", label: "Interesse" },
   { value: "angebot_raus", label: "Angebot raus" },
   { value: "kein_interesse", label: "Kein Interesse" },
@@ -21,20 +22,14 @@ export const AKQUISE_STATUS_LABELS: Record<string, string> = Object.fromEntries(
 // Farbhierarchie: heisse Leads ziehen das Auge, tote Leads treten zurueck.
 // Eine zentrale Stelle - Badge und Status-Dropdown lesen beide hieraus.
 export const AKQUISE_STATUS_STYLES: Record<AkquiseStatus, string> = {
-  // Heiss -> warme/kraeftige Farbe, maximal sichtbar
-  interesse: "bg-green-500/15 text-green-300 border-green-500/40",
-  // Fest verabredet -> blau
-  rueckruf_vereinbart: "bg-blue-500/15 text-blue-300 border-blue-500/40",
-  // Wartet auf Kundenantwort -> amber
-  angebot_raus: "bg-amber-500/15 text-amber-300 border-amber-500/40",
-  // Gewonnen -> eigener Akzent (violett), klar abgesetzt
-  kunde: "bg-violet-500/15 text-violet-300 border-violet-500/40",
-  // Noch zu tun -> neutral, aber aktiv (heller Text/Rand)
   offen: "bg-neutral-400/10 text-[var(--text-secondary)] border-neutral-400/30",
-  // Neutral, kein Alarm -> gedaempftes Grau
-  nicht_erreicht: "bg-neutral-500/10 text-neutral-400 border-neutral-500/25",
-  // Tot -> zurueckgenommen, niedriger Kontrast (aber lesbar), darf nicht knallen
-  kein_interesse: "bg-neutral-500/5 text-neutral-500 border-neutral-500/20",
+  nicht_erreicht: "bg-yellow-500/15 text-yellow-300 border-yellow-500/40",
+  rueckruf_vereinbart: "bg-blue-500/15 text-blue-300 border-blue-500/40",
+  rueckruf_offen: "bg-orange-500/15 text-orange-300 border-orange-500/40",
+  interesse: "bg-green-500/15 text-green-300 border-green-500/40",
+  angebot_raus: "bg-violet-500/15 text-violet-300 border-violet-500/40",
+  kein_interesse: "bg-neutral-600/10 text-neutral-500 border-neutral-600/25",
+  kunde: "bg-emerald-500/15 text-emerald-300 border-emerald-500/40",
 };
 
 export const LEAD_AKTION: { value: LeadAktion; label: string }[] = [

@@ -2,6 +2,7 @@ export type AkquiseStatus =
   | "offen"
   | "nicht_erreicht"
   | "rueckruf_vereinbart"
+  | "rueckruf_offen"
   | "interesse"
   | "angebot_raus"
   | "kein_interesse"

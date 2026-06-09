@@ -27,18 +27,15 @@ type Props = {
   currentUserId: string;
 };
 
-const HOT_STATUS = new Set(["interesse", "rueckruf_vereinbart"]);
-
+// Handlungsbedarf = Vertrieb hat explizit Angebot oder Brief angefordert.
 function needsAction(lead: AkquiseLead): boolean {
-  return lead.aktion_benoetigt !== "keine" || HOT_STATUS.has(lead.akquise_status);
+  return lead.aktion_benoetigt !== "keine";
 }
 
 // 1 = dringendster
 function actionRank(lead: AkquiseLead): number {
   if (lead.aktion_benoetigt === "angebot") return 1;
   if (lead.aktion_benoetigt === "brief") return 2;
-  if (lead.akquise_status === "interesse") return 3;
-  if (lead.akquise_status === "rueckruf_vereinbart") return 4;
   return 99;
 }
 
