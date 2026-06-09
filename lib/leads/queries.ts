@@ -41,9 +41,6 @@ export async function listLeads(
 
   if (filters.status?.length) {
     query = query.in("status", filters.status);
-  } else if (!filters.includeDiscarded) {
-    // Verworfene/verlorene standardmaessig ausblenden; NULL bleibt sichtbar.
-    query = query.or("status.is.null,status.not.in.(lost,rejected)");
   }
 
   if (filters.potential?.length) {

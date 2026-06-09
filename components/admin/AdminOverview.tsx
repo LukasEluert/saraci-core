@@ -17,6 +17,7 @@ import {
   LEAD_AKTION_STYLES,
 } from "@/lib/akquise/constants";
 import { AkquiseStatusBadge } from "@/components/akquise/AkquiseStatusBadge";
+import { formatCreatedAt } from "@/lib/leads/format";
 import type { AkquiseLead, LeadAktion } from "@/lib/akquise/types";
 
 type Props = {
@@ -44,6 +45,10 @@ function actionRank(lead: AkquiseLead): number {
 function waitingSince(lead: AkquiseLead): number {
   const iso = lead.aktion_seit ?? lead.created_at;
   return iso ? new Date(iso).getTime() : 0;
+}
+
+function createdAtTime(lead: AkquiseLead): number {
+  return lead.created_at ? new Date(lead.created_at).getTime() : Number.MAX_SAFE_INTEGER;
 }
 
 function daysSince(iso: string | null | undefined): number | null {
@@ -91,7 +96,9 @@ export function AdminOverview({
         .filter(needsAction)
         .sort(
           (a, b) =>
-            actionRank(a) - actionRank(b) || waitingSince(a) - waitingSince(b)
+            actionRank(a) - actionRank(b) ||
+            createdAtTime(a) - createdAtTime(b) ||
+            waitingSince(a) - waitingSince(b)
         ),
     [leads]
   );
@@ -242,6 +249,7 @@ function LeadTable({
             <th className="hidden lg:table-cell">Notiz</th>
             <th className="hidden md:table-cell">Telefon</th>
             <th className="hidden lg:table-cell">Zugewiesen an</th>
+            <th className="hidden lg:table-cell">Erstellt</th>
             <th className="hidden xl:table-cell">Letzte Akt.</th>
             <th />
           </tr>
@@ -351,6 +359,9 @@ function LeadRow({
       </td>
       <td className="hidden text-[var(--text-secondary)] lg:table-cell">
         {lead.assigned_to ? userLabels[lead.assigned_to] ?? "Unbekannt" : "—"}
+      </td>
+      <td className="hidden whitespace-nowrap text-[var(--text-tertiary)] lg:table-cell">
+        {formatCreatedAt(lead.created_at)}
       </td>
       <td className="hidden text-[var(--text-tertiary)] xl:table-cell">
         {days === null ? "—" : days === 0 ? "heute" : `${days} T`}

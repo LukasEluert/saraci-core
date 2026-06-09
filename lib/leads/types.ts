@@ -83,8 +83,6 @@ export interface LeadListFilters {
   score_min?: number;
   score_max?: number;
   q?: string;
-  // true -> auch verworfene/verlorene Leads (lost, rejected) anzeigen
-  includeDiscarded?: boolean;
   limit?: number;
   offset?: number;
 }

@@ -38,15 +38,12 @@ export default async function LeadsPage({ searchParams }: PageProps) {
   const scoreMax = params.score_max ? Number(params.score_max) : undefined;
   const q = typeof params.q === "string" ? params.q : undefined;
 
-  const showDiscarded = params.archived === "1";
-
   const { leads, total } = await listLeads({
     status,
     potential,
     score_min: Number.isFinite(scoreMin) ? scoreMin : undefined,
     score_max: Number.isFinite(scoreMax) ? scoreMax : undefined,
     q,
-    includeDiscarded: showDiscarded,
   });
 
   const pendingIds = await getPendingLeadIds();

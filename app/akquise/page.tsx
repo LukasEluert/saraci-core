@@ -9,6 +9,7 @@ import { NewLeadDialog } from "@/components/akquise/NewLeadDialog";
 import { ArchiveLeadButton } from "@/components/akquise/ArchiveLeadButton";
 import { LeadCard } from "@/components/akquise/LeadCard";
 import { BearbeitungBadge } from "@/components/akquise/BearbeitungBadge";
+import { formatCreatedAt } from "@/lib/leads/format";
 
 export const metadata: Metadata = { title: "Akquise" };
 export const dynamic = "force-dynamic";
@@ -114,6 +115,7 @@ export default async function AkquisePage({ searchParams }: PageProps) {
               <th className="hidden xl:table-cell">Mail</th>
               <th className="hidden lg:table-cell">Website</th>
               <th className="hidden xl:table-cell">Notiz</th>
+              <th>Erstellt</th>
               {showArchived && <th className="text-right">Aktion</th>}
             </tr>
           </thead>
@@ -192,6 +194,9 @@ export default async function AkquisePage({ searchParams }: PageProps) {
                   >
                     {lead.notiz || "—"}
                   </span>
+                </td>
+                <td className="whitespace-nowrap text-[var(--text-tertiary)]">
+                  {formatCreatedAt(lead.created_at)}
                 </td>
                 {showArchived && (
                   <td className="text-right">
