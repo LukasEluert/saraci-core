@@ -1,19 +1,19 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getAdminUser } from "@/lib/auth/users";
 import { resolveUserNames } from "@/lib/admin/queries";
 import { daysSince, getLastFiveWeekRanges } from "./weeks";
 
 const ACTION_LIMIT = 10;
 
 const LEAD_ACTION_FIELDS =
-  "id, firma, telefon, akquise_status, aktion_seit, updated_at, created_at";
+  "id, firma, telefon, akquise_status, updated_at, created_at";
 
 type LeadActionRow = {
   id: string;
   firma: string | null;
   telefon: string | null;
   akquise_status: string;
-  aktion_seit: string | null;
   updated_at: string | null;
   created_at: string | null;
 };
@@ -69,7 +69,7 @@ function referenceForFollowUp(lead: LeadActionRow): string {
 }
 
 function referenceForRueckruf(lead: LeadActionRow): string {
-  return lead.aktion_seit ?? lead.updated_at ?? lead.created_at ?? "";
+  return lead.updated_at ?? lead.created_at ?? "";
 }
 
 function toActionItem(
@@ -132,6 +132,7 @@ export async function getActionRequired(): Promise<ActionRequired> {
 
 export async function getPipelineStats(): Promise<PipelineStats> {
   const supabase = createAdminClient();
+  const admin = await getAdminUser();
 
   const base = () => supabase.from("leads").select("*", { count: "exact", head: true }).eq("archiviert", false);
 
@@ -139,7 +140,7 @@ export async function getPipelineStats(): Promise<PipelineStats> {
     base().not("akquise_status", "in", '("kein_interesse","kunde")'),
     base().eq("akquise_status", "in_kontakt"),
     base().eq("akquise_status", "angebot_raus"),
-    base().neq("aktion_benoetigt", "keine"),
+    base().eq("assigned_to", admin.id),
   ]);
 
   return {

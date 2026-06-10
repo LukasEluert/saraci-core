@@ -1,4 +1,6 @@
-import type { AkquiseStatus, LeadAktion } from "./types";
+import type { AkquiseStatus } from "./types";
+
+export type { AkquiseStatus };
 
 export const AKQUISE_STATUS: { value: AkquiseStatus; label: string }[] = [
   { value: "neu", label: "Neu" },
@@ -36,32 +38,6 @@ export const AKQUISE_STATUS_STYLES: Record<AkquiseStatus, string> = {
   kunde: "bg-emerald-500/15 text-emerald-300 border-emerald-500/40",
 };
 
-export const LEAD_AKTION: { value: LeadAktion; label: string }[] = [
-  { value: "keine", label: "Keine" },
-  { value: "angebot", label: "Angebot erstellen" },
-  { value: "brief", label: "Brief senden" },
-];
-
-export const LEAD_AKTION_VALUES = new Set<string>(
-  LEAD_AKTION.map((a) => a.value)
-);
-
-export const LEAD_AKTION_LABELS: Record<string, string> = Object.fromEntries(
-  LEAD_AKTION.map((a) => [a.value, a.label])
-);
-
-export const LEAD_AKTION_BADGE: Record<LeadAktion, string> = {
-  keine: "",
-  angebot: "Angebot",
-  brief: "Brief",
-};
-
-export const LEAD_AKTION_STYLES: Record<LeadAktion, string> = {
-  keine: "",
-  angebot: "bg-orange-500/15 text-orange-300 border-orange-500/40",
-  brief: "bg-amber-500/15 text-amber-300 border-amber-500/40",
-};
-
 export const ACTIVITY_TYPES: { value: "anruf" | "mail" | "notiz"; label: string }[] = [
   { value: "anruf", label: "Anruf" },
   { value: "mail", label: "Mail" },
@@ -72,7 +48,7 @@ export const ACTIVITY_TYPE_LABELS: Record<string, string> = Object.fromEntries(
   ACTIVITY_TYPES.map((t) => [t.value, t.label])
 );
 
-/** Status, bei denen Lukas schreiben soll (Phase-1-Handlungsbedarf). */
+/** Status, bei denen Lukas schreiben soll (Referenz für UI-Schnellaktionen). */
 export const LUKAS_SCHREIB_STATUS: AkquiseStatus[] = [
   "email_schreiben",
   "angebot_schreiben",

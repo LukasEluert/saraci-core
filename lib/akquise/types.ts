@@ -13,8 +13,6 @@ export type AkquiseStatus =
 
 export type ActivityTyp = "anruf" | "mail" | "notiz";
 
-export type LeadAktion = "keine" | "angebot" | "brief";
-
 export interface AkquiseLead {
   id: string;
   firma: string | null;
@@ -27,9 +25,6 @@ export interface AkquiseLead {
   assigned_to: string | null;
   /** @deprecated DB-Backup; App nutzt lead_notes */
   notiz: string | null;
-  aktion_benoetigt: LeadAktion;
-  aktion_notiz: string | null;
-  aktion_seit: string | null;
   bearbeitung_von: string | null;
   bearbeitung_seit: string | null;
   archiviert: boolean;

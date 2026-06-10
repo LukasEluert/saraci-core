@@ -3,10 +3,8 @@
 import { fromZonedTime } from "date-fns-tz";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import {
-  AKQUISE_STATUS_VALUES,
-  LEAD_AKTION_VALUES,
-} from "@/lib/akquise/constants";
+import { AKQUISE_STATUS_VALUES } from "@/lib/akquise/constants";
+import { getAdminUser, getVertriebUser } from "@/lib/auth/users";
 
 const APPOINTMENT_TZ = "Europe/Berlin";
 
@@ -32,6 +30,12 @@ async function adminClient() {
   return { supabase, user };
 }
 
+function revalidateLeadPaths(leadId: string) {
+  revalidatePath("/akquise");
+  revalidatePath(`/akquise/${leadId}`);
+  revalidatePath("/admin/uebersicht");
+}
+
 export async function createAkquiseLead(input: {
   firma: string;
   branche?: string;
@@ -45,11 +49,11 @@ export async function createAkquiseLead(input: {
   if (!firma) throw new Error("Firma ist ein Pflichtfeld.");
 
   const { supabase, user } = await authedClient();
+  const vertrieb = await getVertriebUser();
 
   // leads.domain ist NOT NULL; Website ist optional -> leerer String als Fallback.
   const domain = input.website?.trim() || "";
 
-  // assigned_to/created_by = self: RLS leads_insert (assigned_to = auth.uid()) erlaubt das.
   const { data, error } = await supabase
     .from("leads")
     .insert({
@@ -60,7 +64,7 @@ export async function createAkquiseLead(input: {
       email: input.email?.trim() || null,
       domain,
       akquise_status: "neu",
-      assigned_to: user.id,
+      assigned_to: vertrieb.id,
       created_by: user.id,
     })
     .select("id")
@@ -82,50 +86,77 @@ export async function createAkquiseLead(input: {
   return { id: data.id as string };
 }
 
-export async function setAkquiseStatus(leadId: string, status: string) {
+export async function setAkquiseStatus(
+  leadId: string,
+  status: string,
+  opts?: { logNote?: string }
+) {
   if (!AKQUISE_STATUS_VALUES.has(status)) {
     throw new Error("Ungültiger Status.");
   }
-  const { supabase } = await authedClient();
-  // RLS stellt sicher, dass nur zugewiesene Leads (oder Admin) aktualisiert werden.
-  const { error } = await supabase
-    .from("leads")
-    .update({ akquise_status: status })
-    .eq("id", leadId);
+  const { supabase, user } = await authedClient();
 
-  if (error) throw new Error(error.message);
+  const updates: Record<string, unknown> = { akquise_status: status };
 
-  revalidatePath("/akquise");
-  revalidatePath(`/akquise/${leadId}`);
-}
-
-export async function setLeadAktion(input: {
-  leadId: string;
-  aktion: "keine" | "angebot" | "brief";
-  aktionNotiz?: string;
-}) {
-  if (!LEAD_AKTION_VALUES.has(input.aktion)) {
-    throw new Error("Ungültige Aktion.");
+  const assignToDiego = new Set(["angebot_raus", "email_raus", "nachfassen"]);
+  if (assignToDiego.has(status)) {
+    const diego = await getVertriebUser();
+    updates.assigned_to = diego.id;
   }
-  const { supabase } = await authedClient();
-  const { error } = await supabase
-    .from("leads")
-    .update({
-      aktion_benoetigt: input.aktion,
-      aktion_notiz: input.aktionNotiz?.trim() || null,
-      // Uhr startet beim Setzen eines Flags; "keine" loescht sie.
-      aktion_seit: input.aktion === "keine" ? null : new Date().toISOString(),
-    })
-    .eq("id", input.leadId);
+  if (status === "angebot_raus" || status === "email_raus") {
+    updates.bearbeitung_von = null;
+    updates.bearbeitung_seit = null;
+  }
 
+  const { error } = await supabase.from("leads").update(updates).eq("id", leadId);
   if (error) throw new Error(error.message);
 
-  revalidatePath("/akquise");
-  revalidatePath(`/akquise/${input.leadId}`);
-  revalidatePath("/admin/uebersicht");
+  if (opts?.logNote) {
+    const { error: actError } = await supabase.from("activities").insert({
+      lead_id: leadId,
+      user_id: user.id,
+      typ: "notiz",
+      notiz: opts.logNote,
+    });
+    if (actError) throw new Error(actError.message);
+  }
+
+  revalidateLeadPaths(leadId);
 }
 
-export async function leadUebernehmen(leadId: string) {
+export async function assignToLukas(leadId: string) {
+  const { supabase } = await authedClient();
+  const lukas = await getAdminUser();
+  const { error } = await supabase
+    .from("leads")
+    .update({ assigned_to: lukas.id })
+    .eq("id", leadId);
+  if (error) throw new Error(error.message);
+  revalidateLeadPaths(leadId);
+}
+
+export async function assignToDiego(leadId: string) {
+  const { supabase } = await authedClient();
+  const diego = await getVertriebUser();
+  const { error } = await supabase
+    .from("leads")
+    .update({ assigned_to: diego.id })
+    .eq("id", leadId);
+  if (error) throw new Error(error.message);
+  revalidateLeadPaths(leadId);
+}
+
+export async function assignToSelf(leadId: string) {
+  const { supabase, user } = await authedClient();
+  const { error } = await supabase
+    .from("leads")
+    .update({ assigned_to: user.id })
+    .eq("id", leadId);
+  if (error) throw new Error(error.message);
+  revalidateLeadPaths(leadId);
+}
+
+export async function startBearbeitung(leadId: string) {
   const { supabase, user } = await adminClient();
   const { error } = await supabase
     .from("leads")
@@ -134,47 +165,18 @@ export async function leadUebernehmen(leadId: string) {
       bearbeitung_seit: new Date().toISOString(),
     })
     .eq("id", leadId);
-
   if (error) throw new Error(error.message);
-
-  revalidatePath("/akquise");
-  revalidatePath(`/akquise/${leadId}`);
-  revalidatePath("/admin/uebersicht");
+  revalidateLeadPaths(leadId);
 }
 
-export async function leadFreigeben(leadId: string) {
+export async function endBearbeitung(leadId: string) {
   const { supabase } = await adminClient();
   const { error } = await supabase
     .from("leads")
     .update({ bearbeitung_von: null, bearbeitung_seit: null })
     .eq("id", leadId);
-
   if (error) throw new Error(error.message);
-
-  revalidatePath("/akquise");
-  revalidatePath(`/akquise/${leadId}`);
-  revalidatePath("/admin/uebersicht");
-}
-
-export async function markAngebotRaus(leadId: string) {
-  const { supabase } = await authedClient();
-  const { error } = await supabase
-    .from("leads")
-    .update({
-      aktion_benoetigt: "keine",
-      aktion_seit: null,
-      akquise_status: "angebot_raus",
-      // Angebot ist raus -> nicht mehr "in Arbeit".
-      bearbeitung_von: null,
-      bearbeitung_seit: null,
-    })
-    .eq("id", leadId);
-
-  if (error) throw new Error(error.message);
-
-  revalidatePath("/akquise");
-  revalidatePath(`/akquise/${leadId}`);
-  revalidatePath("/admin/uebersicht");
+  revalidateLeadPaths(leadId);
 }
 
 export async function setLeadArchived(leadId: string, archiviert: boolean) {

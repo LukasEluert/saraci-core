@@ -4,22 +4,15 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { BADGE_BASE } from "@/lib/ui/badge-styles";
 import {
-  leadFreigeben,
-  leadUebernehmen,
-  markAngebotRaus,
+  assignToDiego,
+  setAkquiseStatus,
 } from "@/app/actions/akquise";
 import { BearbeitungBadge } from "@/components/akquise/BearbeitungBadge";
-import {
-  AKQUISE_STATUS,
-  LEAD_AKTION_BADGE,
-  LEAD_AKTION_STYLES,
-  LUKAS_SCHREIB_STATUS,
-} from "@/lib/akquise/constants";
+import { AKQUISE_STATUS, LUKAS_SCHREIB_STATUS } from "@/lib/akquise/constants";
 import { AkquiseStatusBadge } from "@/components/akquise/AkquiseStatusBadge";
-import { formatCreatedAt } from "@/lib/leads/format";
-import type { AkquiseLead, LeadAktion } from "@/lib/akquise/types";
+import { formatCreatedAt, formatDateTime } from "@/lib/leads/format";
+import type { AkquiseLead } from "@/lib/akquise/types";
 
 type Props = {
   leads: AkquiseLead[];
@@ -29,24 +22,12 @@ type Props = {
   latestNotes?: Record<string, string>;
 };
 
-// Handlungsbedarf: alte aktion_benoetigt-Flags ODER Schreib-Status bei Lukas (Phase 1).
 function needsAction(lead: AkquiseLead, currentUserId: string): boolean {
-  if (lead.aktion_benoetigt !== "keine") return true;
-  return (
-    LUKAS_SCHREIB_STATUS.includes(lead.akquise_status) &&
-    lead.assigned_to === currentUserId
-  );
+  return lead.assigned_to === currentUserId;
 }
 
-// 1 = dringendster
-function actionRank(lead: AkquiseLead): number {
-  if (lead.aktion_benoetigt === "angebot") return 1;
-  if (lead.aktion_benoetigt === "brief") return 2;
-  return 99;
-}
-
-function waitingSince(lead: AkquiseLead): number {
-  const iso = lead.aktion_seit ?? lead.created_at;
+function assignedSinceTime(lead: AkquiseLead): number {
+  const iso = lead.updated_at ?? lead.created_at;
   return iso ? new Date(iso).getTime() : 0;
 }
 
@@ -100,9 +81,8 @@ export function AdminOverview({
         .filter((l) => needsAction(l, currentUserId))
         .sort(
           (a, b) =>
-            actionRank(a) - actionRank(b) ||
             createdAtTime(a) - createdAtTime(b) ||
-            waitingSince(a) - waitingSince(b)
+            assignedSinceTime(a) - assignedSinceTime(b)
         ),
     [leads, currentUserId]
   );
@@ -253,10 +233,9 @@ function LeadTable({
           <tr className="label-caps text-[10px] text-[var(--text-tertiary)] [&>th]:border-b [&>th]:border-[var(--border)] [&>th]:px-4 [&>th]:py-3 [&>th]:font-semibold">
             <th>Firma</th>
             <th>Status</th>
-            <th>Aktion</th>
             <th className="hidden lg:table-cell">Notiz</th>
             <th className="hidden md:table-cell">Telefon</th>
-            <th className="hidden lg:table-cell">Zugewiesen an</th>
+            <th className="hidden lg:table-cell">Zugewiesen seit</th>
             <th className="hidden lg:table-cell">Erstellt</th>
             <th className="hidden xl:table-cell">Letzte Akt.</th>
             <th />
@@ -302,12 +281,10 @@ function LeadRow({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const aktion = lead.aktion_benoetigt as LeadAktion;
   const days = daysSince(lastActivity[lead.id]);
+  const assignedSince = lead.updated_at ?? lead.created_at;
 
   const inArbeit = !!lead.bearbeitung_von;
-  const flagged = needsAction(lead, currentUserId);
-  const mine = lead.bearbeitung_von === currentUserId;
   const bearbeiterName = lead.bearbeitung_von
     ? userLabels[lead.bearbeitung_von] ?? "Unbekannt"
     : null;
@@ -325,6 +302,8 @@ function LeadRow({
 
   const open = () => router.push(`/akquise/${lead.id}?from=handlungsbedarf`);
 
+  const schreibStatus = LUKAS_SCHREIB_STATUS.includes(lead.akquise_status);
+
   return (
     <tr
       onClick={open}
@@ -335,27 +314,22 @@ function LeadRow({
       }}
       className={cn(
         "cursor-pointer border-b border-[var(--border-subtle)] transition-colors hover:bg-[var(--surface-hover)] [&>td]:px-4 [&>td]:py-2.5",
-        highlight && aktion === "angebot" && "border-l-2 border-l-orange-500/60",
-        highlight && aktion === "brief" && "border-l-2 border-l-amber-500/60"
+        highlight &&
+          lead.akquise_status === "angebot_schreiben" &&
+          "border-l-2 border-l-orange-500/60",
+        highlight &&
+          lead.akquise_status === "email_schreiben" &&
+          "border-l-2 border-l-amber-500/60"
       )}
     >
       <td className="font-medium text-[var(--text-primary)]">
-        {lead.firma || lead.domain || "Lead"}
+        <div className="flex flex-col gap-1">
+          <span>{lead.firma || lead.domain || "Lead"}</span>
+          {inArbeit && <BearbeitungBadge name={bearbeiterName} />}
+        </div>
       </td>
       <td>
         <AkquiseStatusBadge status={lead.akquise_status} />
-      </td>
-      <td>
-        <div className="flex flex-col items-start gap-1">
-          {aktion !== "keine" ? (
-            <span className={cn(BADGE_BASE, LEAD_AKTION_STYLES[aktion])}>
-              {LEAD_AKTION_BADGE[aktion]}
-            </span>
-          ) : (
-            <span className="text-[var(--text-tertiary)]">—</span>
-          )}
-          {inArbeit && <BearbeitungBadge name={bearbeiterName} />}
-        </div>
       </td>
       <td className="hidden max-w-[240px] lg:table-cell">
         <span
@@ -368,8 +342,8 @@ function LeadRow({
       <td className="hidden text-[var(--text-secondary)] md:table-cell">
         {lead.telefon || "—"}
       </td>
-      <td className="hidden text-[var(--text-secondary)] lg:table-cell">
-        {lead.assigned_to ? userLabels[lead.assigned_to] ?? "Unbekannt" : "—"}
+      <td className="hidden whitespace-nowrap text-[var(--text-tertiary)] lg:table-cell">
+        {assignedSince ? formatDateTime(assignedSince) : "—"}
       </td>
       <td className="hidden whitespace-nowrap text-[var(--text-tertiary)] lg:table-cell">
         {formatCreatedAt(lead.created_at)}
@@ -379,36 +353,50 @@ function LeadRow({
       </td>
       <td onClick={(e) => e.stopPropagation()}>
         <div className="flex flex-wrap justify-end gap-1.5">
-          {!inArbeit && flagged && (
+          {schreibStatus && lead.akquise_status === "angebot_schreiben" && (
             <button
               type="button"
               disabled={pending}
               onClick={() =>
-                run(() => leadUebernehmen(lead.id), "Du bearbeitest diesen Lead")
+                run(
+                  () =>
+                    setAkquiseStatus(lead.id, "angebot_raus", {
+                      logNote: "Angebot raus",
+                    }),
+                  "Angebot raus"
+                )
               }
-              className="focus-ring whitespace-nowrap rounded-md border border-sky-500/40 bg-sky-500/10 px-2.5 py-1 text-xs font-medium text-sky-300 hover:bg-sky-500/20 disabled:opacity-50"
-            >
-              Übernehmen
-            </button>
-          )}
-          {inArbeit && mine && (
-            <button
-              type="button"
-              disabled={pending}
-              onClick={() => run(() => markAngebotRaus(lead.id), "Erledigt")}
               className="focus-ring whitespace-nowrap rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50"
             >
               Angebot raus
             </button>
           )}
-          {inArbeit && (
+          {schreibStatus && lead.akquise_status === "email_schreiben" && (
             <button
               type="button"
               disabled={pending}
-              onClick={() => run(() => leadFreigeben(lead.id), "Freigegeben")}
-              className="focus-ring whitespace-nowrap rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] px-2.5 py-1 text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] disabled:opacity-50"
+              onClick={() =>
+                run(
+                  () =>
+                    setAkquiseStatus(lead.id, "email_raus", {
+                      logNote: "Email raus",
+                    }),
+                  "Email raus"
+                )
+              }
+              className="focus-ring whitespace-nowrap rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50"
             >
-              Freigeben
+              Email raus
+            </button>
+          )}
+          {needsAction(lead, currentUserId) && (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => run(() => assignToDiego(lead.id), "An Diego zurück")}
+              className="focus-ring whitespace-nowrap rounded-md border border-blue-500/40 bg-blue-500/10 px-2.5 py-1 text-xs font-medium text-blue-300 hover:bg-blue-500/20 disabled:opacity-50"
+            >
+              Zurück an Diego
             </button>
           )}
         </div>
