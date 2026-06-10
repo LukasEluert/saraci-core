@@ -1,5 +1,4 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getLatestLeadNotesMapAdmin } from "@/lib/akquise/leadNotes";
 import { buildCalendar, type IcsEvent } from "@/lib/akquise/ics";
 
 export const runtime = "nodejs";
@@ -24,12 +23,6 @@ type ApptRow = {
     telefon: string | null;
   } | null;
 };
-
-function truncateText(value: string | null | undefined, max = 200): string {
-  if (!value?.trim()) return "—";
-  const t = value.trim();
-  return t.length <= max ? t : `${t.slice(0, max).trim()}…`;
-}
 
 export async function GET(req: Request, context: RouteContext) {
   const { token } = await context.params;
@@ -64,15 +57,6 @@ export async function GET(req: Request, context: RouteContext) {
     .lte("faellig_am", to)
     .order("faellig_am", { ascending: true });
 
-  const leadIds = Array.from(
-    new Set(
-      ((appointments ?? []) as unknown as ApptRow[])
-        .map((a) => a.lead?.id)
-        .filter((id): id is string => !!id)
-    )
-  );
-  const latestNotes = await getLatestLeadNotesMapAdmin(leadIds, admin);
-
   const appBase =
     process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
     new URL(req.url).origin;
@@ -81,20 +65,11 @@ export async function GET(req: Request, context: RouteContext) {
     (a) => {
       const firma = a.lead?.firma || a.lead?.domain || "—";
       const telefon = a.lead?.telefon?.trim() || "—";
-      const notiz = truncateText(a.lead?.id ? latestNotes[a.lead.id] : null);
       const summary = `${a.titel}: ${firma}`;
       const link = a.lead?.id
         ? `${appBase}/akquise/${a.lead.id}`
         : `${appBase}/akquise`;
-      const description = [
-        a.titel,
-        "",
-        `Firma: ${firma}`,
-        `Telefon: ${telefon}`,
-        `Notiz: ${notiz}`,
-        "",
-        link,
-      ].join("\n");
+      const description = [`Firma: ${firma}`, `Telefon: ${telefon}`, "", link].join("\n");
 
       return {
         uid: a.id,
