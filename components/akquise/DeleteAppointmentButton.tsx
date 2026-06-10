@@ -22,7 +22,18 @@ export function DeleteAppointmentButton({
       description="Diese Wiedervorlage wird dauerhaft entfernt. Erledigte kannst du stattdessen einfach abhaken."
       confirmLabel="Loeschen"
       successMessage="Wiedervorlage geloescht"
-      onConfirm={() => deleteAppointment(id, leadId)}
+      onConfirm={async () => {
+        try {
+          await deleteAppointment(id, leadId);
+        } catch (err) {
+          console.error("[DeleteAppointmentButton] Loeschen fehlgeschlagen:", {
+            appointmentId: id,
+            leadId,
+            err,
+          });
+          throw err;
+        }
+      }}
       onDone={() => router.refresh()}
     >
       <Trash2 className="size-3.5" strokeWidth={1.75} aria-hidden />

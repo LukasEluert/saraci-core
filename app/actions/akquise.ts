@@ -1,11 +1,14 @@
 "use server";
 
+import { fromZonedTime } from "date-fns-tz";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import {
   AKQUISE_STATUS_VALUES,
   LEAD_AKTION_VALUES,
 } from "@/lib/akquise/constants";
+
+const APPOINTMENT_TZ = "Europe/Berlin";
 
 async function authedClient() {
   const supabase = await createClient();
@@ -205,11 +208,60 @@ export async function deleteActivity(id: string, leadId: string) {
 }
 
 export async function deleteAppointment(id: string, leadId?: string) {
-  const { supabase } = await authedClient();
-  // RLS app_delete (Admin oder user_id = auth.uid()) entscheidet, ob geloescht wird.
-  const { error } = await supabase.from("appointments").delete().eq("id", id);
+  const { supabase, user } = await authedClient();
 
-  if (error) throw new Error(error.message);
+  const { data: appt, error: fetchError } = await supabase
+    .from("appointments")
+    .select("id, user_id")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (fetchError) {
+    console.error("[deleteAppointment] Laden fehlgeschlagen:", {
+      id,
+      userId: user.id,
+      fetchError,
+    });
+    throw new Error(`Termin konnte nicht geladen werden: ${fetchError.message}`);
+  }
+
+  if (!appt) {
+    console.error("[deleteAppointment] Nicht gefunden oder kein SELECT-Zugriff:", {
+      id,
+      userId: user.id,
+    });
+    throw new Error(
+      "Wiedervorlage nicht gefunden oder kein Zugriff (RLS: nur eigene Termine oder Admin)."
+    );
+  }
+
+  const { error, count } = await supabase
+    .from("appointments")
+    .delete({ count: "exact" })
+    .eq("id", id);
+
+  if (error) {
+    console.error("[deleteAppointment] DELETE fehlgeschlagen:", {
+      id,
+      userId: user.id,
+      ownerId: appt.user_id,
+      error,
+    });
+    throw new Error(
+      `Löschen fehlgeschlagen: ${error.message} (Besitzer: ${appt.user_id}, du: ${user.id})`
+    );
+  }
+
+  if ((count ?? 0) === 0) {
+    console.error("[deleteAppointment] Keine Zeile gelöscht:", {
+      id,
+      userId: user.id,
+      ownerId: appt.user_id,
+    });
+    throw new Error(
+      "Keine Wiedervorlage gelöscht — RLS hat den DELETE blockiert oder der Termin existiert nicht mehr."
+    );
+  }
 
   if (leadId) revalidatePath(`/akquise/${leadId}`);
   revalidatePath("/akquise/heute");
@@ -246,7 +298,7 @@ export async function createAppointment(input: {
   const titel = input.titel.trim();
   if (!titel) throw new Error("Titel fehlt.");
 
-  const due = new Date(input.faelligAm);
+  const due = fromZonedTime(input.faelligAm, APPOINTMENT_TZ);
   if (Number.isNaN(due.getTime())) throw new Error("Ungültiges Datum.");
 
   const { supabase, user } = await authedClient();

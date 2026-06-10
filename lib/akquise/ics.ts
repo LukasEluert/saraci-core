@@ -51,7 +51,7 @@ export function buildCalendar(events: IcsEvent[]): string {
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     "X-WR-CALNAME:Saraci Akquise",
-    "X-WR-TIMEZONE:UTC",
+    "X-WR-TIMEZONE:Europe/Berlin",
     "REFRESH-INTERVAL;VALUE=DURATION:PT1H",
     "X-PUBLISHED-TTL:PT1H",
   ];

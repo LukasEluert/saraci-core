@@ -16,8 +16,20 @@ type ApptRow = {
   id: string;
   titel: string;
   faellig_am: string;
-  lead: { id: string; firma: string | null; domain: string | null } | null;
+  lead: {
+    id: string;
+    firma: string | null;
+    domain: string | null;
+    telefon: string | null;
+    notiz: string | null;
+  } | null;
 };
+
+function truncateText(value: string | null | undefined, max = 200): string {
+  if (!value?.trim()) return "—";
+  const t = value.trim();
+  return t.length <= max ? t : `${t.slice(0, max).trim()}…`;
+}
 
 export async function GET(req: Request, context: RouteContext) {
   const { token } = await context.params;
@@ -45,7 +57,9 @@ export async function GET(req: Request, context: RouteContext) {
 
   const { data: appointments } = await admin
     .from("appointments")
-    .select("id, titel, faellig_am, lead:leads(id, firma, domain)")
+    .select(
+      "id, titel, faellig_am, lead:leads(id, firma, domain, telefon, notiz)"
+    )
     .eq("user_id", profile.id)
     .eq("erledigt", false)
     .gte("faellig_am", from)
@@ -58,16 +72,28 @@ export async function GET(req: Request, context: RouteContext) {
 
   const events: IcsEvent[] = ((appointments ?? []) as unknown as ApptRow[]).map(
     (a) => {
-      const firma = a.lead?.firma || a.lead?.domain || null;
-      const summary = firma ? `${a.titel} – ${firma}` : a.titel;
+      const firma = a.lead?.firma || a.lead?.domain || "—";
+      const telefon = a.lead?.telefon?.trim() || "—";
+      const notiz = truncateText(a.lead?.notiz);
+      const summary = `${a.titel}: ${firma}`;
       const link = a.lead?.id
         ? `${appBase}/akquise/${a.lead.id}`
         : `${appBase}/akquise`;
+      const description = [
+        a.titel,
+        "",
+        `Firma: ${firma}`,
+        `Telefon: ${telefon}`,
+        `Notiz: ${notiz}`,
+        "",
+        link,
+      ].join("\n");
+
       return {
         uid: a.id,
         start: new Date(a.faellig_am),
         summary,
-        description: `Wiedervorlage\n${link}`,
+        description,
       };
     }
   );

@@ -1,21 +1,25 @@
 import { formatDistanceToNow } from "date-fns";
 import { de } from "date-fns/locale";
 
+const DISPLAY_TZ = "Europe/Berlin";
+
 export function formatDateTime(value: string | null | undefined): string {
   if (!value) return "—";
   return new Intl.DateTimeFormat("de-DE", {
     dateStyle: "medium",
     timeStyle: "short",
+    timeZone: DISPLAY_TZ,
   }).format(new Date(value));
 }
 
-// Datum kurz: 08.06.2026
+// Datum kurz: 08.06.2026 (Kalendertag in Europe/Berlin)
 export function formatDateShort(value: string | null | undefined): string {
   if (!value) return "—";
   return new Intl.DateTimeFormat("de-DE", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
+    timeZone: DISPLAY_TZ,
   }).format(new Date(value));
 }
 
