@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { listAssignedLeads, getLastActivityMap } from "@/lib/akquise/queries";
+import { ensureFollowUps } from "@/lib/akquise/followUp";
 import { listUsers } from "@/lib/admin/queries";
 import { getCurrentProfile } from "@/lib/auth/profile";
 import { AdminOverview } from "@/components/admin/AdminOverview";
@@ -8,6 +9,14 @@ export const metadata: Metadata = { title: "Handlungsbedarf" };
 export const dynamic = "force-dynamic";
 
 export default async function AdminUebersichtPage() {
+  let followUpUpdated = 0;
+  try {
+    const result = await ensureFollowUps();
+    followUpUpdated = result.updated;
+  } catch (err) {
+    console.error("[ensureFollowUps]", err);
+  }
+
   // listAssignedLeads laeuft ueber den eingeloggten Client; als Admin liefert RLS alle Leads.
   const [leads, users, lastActivity, profile] = await Promise.all([
     listAssignedLeads(),
@@ -32,6 +41,15 @@ export default async function AdminUebersichtPage() {
           Wo du ran musst: angeforderte Aktionen und warme Interessenten zuerst.
         </p>
       </div>
+
+      {followUpUpdated > 0 && (
+        <div className="rounded-md border border-[var(--warning)]/40 bg-[var(--warning)]/10 px-4 py-3 text-sm text-[var(--text-secondary)]">
+          {followUpUpdated}{" "}
+          {followUpUpdated === 1 ? "Lead" : "Leads"} automatisch als Follow-up markiert
+          (Angebot vor 7+ Tagen).
+        </div>
+      )}
+
       <AdminOverview
         leads={leads}
         userLabels={userLabels}

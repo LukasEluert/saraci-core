@@ -30,6 +30,7 @@ export interface AkquiseLead {
   bearbeitung_seit: string | null;
   archiviert: boolean;
   created_at: string | null;
+  updated_at: string | null;
 }
 
 export interface Activity {

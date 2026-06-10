@@ -2,14 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getCurrentProfile } from "@/lib/auth/profile";
 import { listAssignedLeads } from "@/lib/akquise/queries";
+import { isUpdatedTodayBerlin } from "@/lib/akquise/dates";
 import { resolveUserNames } from "@/lib/admin/queries";
-import { StatusSelect } from "@/components/akquise/StatusSelect";
 import { SubscribeButton } from "@/components/akquise/SubscribeButton";
 import { NewLeadDialog } from "@/components/akquise/NewLeadDialog";
-import { ArchiveLeadButton } from "@/components/akquise/ArchiveLeadButton";
-import { LeadCard } from "@/components/akquise/LeadCard";
-import { BearbeitungBadge } from "@/components/akquise/BearbeitungBadge";
-import { formatCreatedAt } from "@/lib/leads/format";
+import { AkquiseLeadListSection } from "@/components/akquise/AkquiseLeadListSection";
 
 export const metadata: Metadata = { title: "Akquise" };
 export const dynamic = "force-dynamic";
@@ -17,10 +14,6 @@ export const dynamic = "force-dynamic";
 type PageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
-
-function websiteHref(domain: string): string {
-  return domain.startsWith("http") ? domain : `https://${domain}`;
-}
 
 export default async function AkquisePage({ searchParams }: PageProps) {
   const params = await searchParams;
@@ -31,6 +24,10 @@ export default async function AkquisePage({ searchParams }: PageProps) {
     listAssignedLeads(q, { archived: showArchived }),
     getCurrentProfile(),
   ]);
+
+  const todayLeads = leads.filter((lead) => isUpdatedTodayBerlin(lead.updated_at));
+  const pipelineLeads = leads.filter((lead) => !isUpdatedTodayBerlin(lead.updated_at));
+  const hasTodaySection = todayLeads.length > 0;
 
   const bearbeiterNames = await resolveUserNames(
     leads.map((l) => l.bearbeitung_von).filter((v): v is string => !!v)
@@ -43,6 +40,10 @@ export default async function AkquisePage({ searchParams }: PageProps) {
     : q
       ? `/akquise?archiv=1&q=${encodeURIComponent(q)}`
       : "/akquise?archiv=1";
+
+  const emptyMessage = showArchived
+    ? "Keine archivierten Leads."
+    : "Keine zugewiesenen Leads.";
 
   return (
     <div className="flex h-full flex-col gap-4">
@@ -83,138 +84,40 @@ export default async function AkquisePage({ searchParams }: PageProps) {
         </button>
       </form>
 
-      {/* Mobile (< md): Karten-Liste, auf "anrufen" optimiert */}
-      <div className="min-h-0 flex-1 space-y-2 overflow-auto md:hidden">
-        {leads.map((lead) => (
-          <LeadCard
-            key={lead.id}
-            lead={lead}
-            archived={showArchived}
-            bearbeiterName={
-              lead.bearbeitung_von ? bearbeiterNames[lead.bearbeitung_von] ?? null : null
-            }
-          />
-        ))}
-        {leads.length === 0 && (
-          <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-10 text-center text-sm text-[var(--text-secondary)]">
-            {showArchived ? "Keine archivierten Leads." : "Keine zugewiesenen Leads."}
-          </div>
-        )}
-      </div>
+      {leads.length === 0 ? (
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-10 text-center text-sm text-[var(--text-secondary)] md:rounded-md">
+          {emptyMessage}
+        </div>
+      ) : (
+        <div className="flex min-h-0 flex-1 flex-col gap-6">
+          {hasTodaySection && (
+            <section className="flex min-h-0 flex-col gap-2">
+              <h2 className="text-sm font-medium text-[var(--text-secondary)]">
+                Heute bearbeitet ({todayLeads.length})
+              </h2>
+              <AkquiseLeadListSection
+                leads={todayLeads}
+                bearbeiterNames={bearbeiterNames}
+                showArchived={showArchived}
+                highlight
+              />
+            </section>
+          )}
 
-      {/* Desktop (>= md): bestehende Tabelle unveraendert */}
-      <div className="hidden min-h-0 flex-1 overflow-auto rounded-md border border-[var(--border)] bg-[var(--surface)] md:block">
-        <table className="w-full border-collapse text-left text-[13px] tracking-[-0.01em]">
-          <thead className="sticky top-0 z-10 bg-[var(--surface-hover)]">
-            <tr className="label-caps text-[10px] text-[var(--text-tertiary)] [&>th]:border-b [&>th]:border-[var(--border)] [&>th]:px-4 [&>th]:py-3 [&>th]:font-semibold">
-              <th>Firma</th>
-              <th className="hidden md:table-cell">Branche</th>
-              <th className="hidden lg:table-cell">Stadt</th>
-              <th>Status</th>
-              <th className="hidden sm:table-cell">Telefon</th>
-              <th className="hidden xl:table-cell">Mail</th>
-              <th className="hidden lg:table-cell">Website</th>
-              <th className="hidden xl:table-cell">Notiz</th>
-              <th>Erstellt</th>
-              {showArchived && <th className="text-right">Aktion</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {leads.map((lead) => (
-              <tr
-                key={lead.id}
-                className="border-b border-[var(--border-subtle)] transition-colors hover:bg-[var(--surface-hover)] [&>td]:px-4 [&>td]:py-3"
-              >
-                <td className="font-medium text-[var(--text-primary)]">
-                  <Link
-                    href={`/akquise/${lead.id}?from=akquise`}
-                    className="hover:text-[var(--accent)] hover:underline"
-                  >
-                    {lead.firma || lead.domain}
-                  </Link>
-                  {lead.bearbeitung_von && (
-                    <div className="mt-1">
-                      <BearbeitungBadge
-                        name={bearbeiterNames[lead.bearbeitung_von] ?? null}
-                      />
-                    </div>
-                  )}
-                </td>
-                <td className="hidden text-[var(--text-secondary)] md:table-cell">
-                  {lead.branche || "—"}
-                </td>
-                <td className="hidden text-[var(--text-secondary)] lg:table-cell">
-                  {lead.region || "—"}
-                </td>
-                <td>
-                  <StatusSelect leadId={lead.id} value={lead.akquise_status} />
-                </td>
-                <td className="hidden text-[var(--text-secondary)] sm:table-cell">
-                  {lead.telefon ? (
-                    <a
-                      href={`tel:${lead.telefon}`}
-                      className="hover:text-[var(--accent)]"
-                    >
-                      {lead.telefon}
-                    </a>
-                  ) : (
-                    "—"
-                  )}
-                </td>
-                <td className="hidden text-[var(--text-secondary)] xl:table-cell">
-                  {lead.email ? (
-                    <a
-                      href={`mailto:${lead.email}`}
-                      className="hover:text-[var(--accent)]"
-                    >
-                      {lead.email}
-                    </a>
-                  ) : (
-                    "—"
-                  )}
-                </td>
-                <td className="hidden lg:table-cell">
-                  {lead.domain ? (
-                    <a
-                      href={websiteHref(lead.domain)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-mono text-[12px] text-[var(--accent)] hover:underline"
-                    >
-                      {lead.domain}
-                    </a>
-                  ) : (
-                    "—"
-                  )}
-                </td>
-                <td className="hidden max-w-[260px] xl:table-cell">
-                  <span
-                    className="block truncate text-[var(--text-tertiary)]"
-                    title={lead.notiz ?? undefined}
-                  >
-                    {lead.notiz || "—"}
-                  </span>
-                </td>
-                <td className="whitespace-nowrap text-[var(--text-tertiary)]">
-                  {formatCreatedAt(lead.created_at)}
-                </td>
-                {showArchived && (
-                  <td className="text-right">
-                    <div className="flex justify-end">
-                      <ArchiveLeadButton leadId={lead.id} archiviert />
-                    </div>
-                  </td>
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {leads.length === 0 && (
-          <div className="p-10 text-center text-sm text-[var(--text-secondary)]">
-            {showArchived ? "Keine archivierten Leads." : "Keine zugewiesenen Leads."}
-          </div>
-        )}
-      </div>
+          {pipelineLeads.length > 0 && (
+            <section className="flex min-h-0 flex-1 flex-col gap-2">
+              {hasTodaySection && (
+                <h2 className="text-sm font-medium text-[var(--text-secondary)]">Pipeline</h2>
+              )}
+              <AkquiseLeadListSection
+                leads={pipelineLeads}
+                bearbeiterNames={bearbeiterNames}
+                showArchived={showArchived}
+              />
+            </section>
+          )}
+        </div>
+      )}
     </div>
   );
 }
