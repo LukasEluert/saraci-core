@@ -21,9 +21,7 @@ export async function listAssignedLeads(
   let query = supabase
     .from("leads")
     .select(LEAD_FIELDS)
-    // Standard: nur aktive Leads. archived=true zeigt das Archiv.
     .eq("archiviert", opts?.archived ?? false)
-    // Aelteste zuerst: was am laengsten liegt, zuerst abarbeiten.
     .order("created_at", { ascending: true, nullsFirst: false });
 
   if (q?.trim()) {
@@ -36,6 +34,13 @@ export async function listAssignedLeads(
   const { data, error } = await query;
   if (error) throw new Error(error.message);
   return (data ?? []) as AkquiseLead[];
+}
+
+/** Alle aktiven Leads fuer Swimlane-Ansicht (Filter client-seitig). */
+export async function listAkquiseLeads(opts?: {
+  archived?: boolean;
+}): Promise<AkquiseLead[]> {
+  return listAssignedLeads(undefined, opts);
 }
 
 export async function getAkquiseLead(

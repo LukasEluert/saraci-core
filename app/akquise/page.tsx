@@ -1,15 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getCurrentProfile } from "@/lib/auth/profile";
-import { listAssignedLeads } from "@/lib/akquise/queries";
+import { listAkquiseLeads } from "@/lib/akquise/queries";
 import { ensureBackgroundTasks } from "@/lib/akquise/backgroundTasks";
-import { isUpdatedTodayBerlin } from "@/lib/akquise/dates";
+import { deriveFilterOptions } from "@/lib/akquise/swimlanes";
 import { getAdminUser } from "@/lib/auth/users";
 import { resolveUserDisplayNames } from "@/lib/admin/queries";
-import { isLeadInArbeit } from "@/lib/akquise/inArbeit";
 import { getLatestLeadNotesMap } from "@/lib/akquise/leadNotes";
-import { SubscribeButton } from "@/components/akquise/SubscribeButton";
-import { NewLeadDialog } from "@/components/akquise/NewLeadDialog";
+import { AkquiseSwimlaneView } from "@/components/akquise/AkquiseSwimlaneView";
 import { AkquiseLeadListSection } from "@/components/akquise/AkquiseLeadListSection";
 
 export const metadata: Metadata = { title: "Akquise" };
@@ -21,7 +19,6 @@ type PageProps = {
 
 export default async function AkquisePage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const q = typeof params.q === "string" ? params.q : undefined;
   const showArchived = params.archiv === "1";
 
   try {
@@ -31,108 +28,84 @@ export default async function AkquisePage({ searchParams }: PageProps) {
   }
 
   const [leads, profile, adminUser] = await Promise.all([
-    listAssignedLeads(q, { archived: showArchived }),
+    listAkquiseLeads({ archived: showArchived }),
     getCurrentProfile(),
     getAdminUser(),
   ]);
 
-  const todayLeads = leads.filter((lead) => isUpdatedTodayBerlin(lead.updated_at));
-  const pipelineLeads = leads.filter((lead) => !isUpdatedTodayBerlin(lead.updated_at));
-  const hasTodaySection = todayLeads.length > 0;
-
-  const assigneeIds = leads
-    .filter((l) => isLeadInArbeit(l.assigned_to, adminUser.id) && l.assigned_to)
-    .map((l) => l.assigned_to as string);
+  const { branchen, regionen, assigneeIds } = deriveFilterOptions(leads);
   const assigneeLabels = await resolveUserDisplayNames(assigneeIds);
   const latestNotes = await getLatestLeadNotesMap(leads.map((l) => l.id));
 
-  const toggleHref = showArchived
-    ? q
-      ? `/akquise?q=${encodeURIComponent(q)}`
-      : "/akquise"
-    : q
-      ? `/akquise?archiv=1&q=${encodeURIComponent(q)}`
-      : "/akquise?archiv=1";
+  const assigneeOptions = assigneeIds.map((id) => ({
+    id,
+    label: assigneeLabels[id] ?? id,
+  }));
 
-  const emptyMessage = showArchived
-    ? "Keine archivierten Leads."
-    : "Keine zugewiesenen Leads.";
+  const archiveHref = showArchived ? "/akquise" : "/akquise?archiv=1";
+
+  if (showArchived) {
+    return (
+      <div className="flex h-full flex-col gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <div className="label-caps">Akquise</div>
+            <h1 className="text-xl font-medium tracking-tight">Archiv</h1>
+            <p className="text-sm text-[var(--text-secondary)]">
+              {leads.length} {leads.length === 1 ? "Eintrag" : "Einträge"}
+            </p>
+          </div>
+          <Link
+            href={archiveHref}
+            className="focus-ring rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          >
+            Aktive Leads
+          </Link>
+        </div>
+
+        {leads.length === 0 ? (
+          <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-10 text-center text-sm text-[var(--text-secondary)] md:rounded-md">
+            Keine archivierten Leads.
+          </div>
+        ) : (
+          <AkquiseLeadListSection
+            leads={leads}
+            adminUserId={adminUser.id}
+            assigneeLabels={assigneeLabels}
+            showArchived
+            latestNotes={latestNotes}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full flex-col gap-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <div className="label-caps">Akquise</div>
-          <h1 className="text-xl font-medium tracking-tight">
-            {showArchived ? "Archiv" : "Meine Leads"}
-          </h1>
-          <p className="text-sm text-[var(--text-secondary)]">
-            {leads.length} {leads.length === 1 ? "Eintrag" : "Einträge"}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href={toggleHref}
-            className="focus-ring rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-          >
-            {showArchived ? "Aktive Leads" : "Archiv"}
-          </Link>
-          {!showArchived && <NewLeadDialog />}
-          {profile && <SubscribeButton token={profile.calendar_token} />}
-        </div>
+      <div>
+        <div className="label-caps">Akquise</div>
+        <h1 className="text-xl font-medium tracking-tight">Meine Leads</h1>
+        <p className="text-sm text-[var(--text-secondary)]">
+          {leads.length} {leads.length === 1 ? "Eintrag" : "Einträge"} gesamt
+        </p>
       </div>
 
-      <form method="get" className="flex gap-2">
-        <input
-          name="q"
-          defaultValue={q ?? ""}
-          placeholder="Firma, Branche, Stadt oder Website suchen…"
-          className="focus-ring w-full max-w-[420px] rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-sm text-[var(--text-primary)]"
+      {profile ? (
+        <AkquiseSwimlaneView
+          leads={leads}
+          adminUserId={adminUser.id}
+          assigneeLabels={assigneeLabels}
+          latestNotes={latestNotes}
+          branchen={branchen}
+          regionen={regionen}
+          assigneeOptions={assigneeOptions}
+          calendarToken={profile.calendar_token}
+          archiveHref={archiveHref}
+          showArchived={false}
         />
-        <button
-          type="submit"
-          className="focus-ring rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-        >
-          Suchen
-        </button>
-      </form>
-
-      {leads.length === 0 ? (
-        <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-10 text-center text-sm text-[var(--text-secondary)] md:rounded-md">
-          {emptyMessage}
-        </div>
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col gap-6">
-          {hasTodaySection && (
-            <section className="flex min-h-0 flex-col gap-2">
-              <h2 className="text-sm font-medium text-[var(--text-secondary)]">
-                Heute bearbeitet ({todayLeads.length})
-              </h2>
-              <AkquiseLeadListSection
-                leads={todayLeads}
-                adminUserId={adminUser.id}
-                assigneeLabels={assigneeLabels}
-                showArchived={showArchived}
-                latestNotes={latestNotes}
-                highlight
-              />
-            </section>
-          )}
-
-          {pipelineLeads.length > 0 && (
-            <section className="flex min-h-0 flex-1 flex-col gap-2">
-              {hasTodaySection && (
-                <h2 className="text-sm font-medium text-[var(--text-secondary)]">Pipeline</h2>
-              )}
-              <AkquiseLeadListSection
-                leads={pipelineLeads}
-                adminUserId={adminUser.id}
-                assigneeLabels={assigneeLabels}
-                showArchived={showArchived}
-                latestNotes={latestNotes}
-              />
-            </section>
-          )}
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-10 text-center text-sm text-[var(--text-secondary)]">
+          Bitte anmelden.
         </div>
       )}
     </div>
