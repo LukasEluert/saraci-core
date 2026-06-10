@@ -1,18 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/lib/auth/profile";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
 
 export async function deleteLeadReport(id: string) {
-  const supabaseAuth = await createClient();
-  const {
-    data: { user },
-  } = await supabaseAuth.auth.getUser();
-
-  if (!user) {
-    throw new Error("Nicht angemeldet.");
-  }
+  await requireAdmin();
 
   const supabase = createAdminClient();
   const { error } = await supabase.from("lead_reports").delete().eq("id", id);

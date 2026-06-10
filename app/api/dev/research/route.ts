@@ -45,6 +45,10 @@ async function resolveRegionId(slug: string): Promise<string> {
 }
 
 export async function POST(req: Request) {
+  if (process.env.NODE_ENV === "production") {
+    return new Response(null, { status: 404 });
+  }
+
   const forbidden = assertDevToken(req);
   if (forbidden) return forbidden;
 

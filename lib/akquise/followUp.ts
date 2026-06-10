@@ -1,10 +1,12 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getVertriebUser } from "@/lib/auth/users";
 
 const FOLLOW_UP_DAYS = 7;
 
 export async function ensureFollowUps(): Promise<{ updated: number }> {
   const supabase = createAdminClient();
+  const diego = await getVertriebUser();
   const cutoff = new Date(Date.now() - FOLLOW_UP_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
   const { data, error } = await supabase
@@ -25,7 +27,7 @@ export async function ensureFollowUps(): Promise<{ updated: number }> {
 
   const { error: updateError } = await supabase
     .from("leads")
-    .update({ akquise_status: "nachfassen" })
+    .update({ akquise_status: "nachfassen", assigned_to: diego.id })
     .in("id", ids);
 
   if (updateError) {

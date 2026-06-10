@@ -1,3 +1,6 @@
+import "server-only";
+
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizeDomainInput } from "./normalizeDomainInput";
 
@@ -9,10 +12,13 @@ export type DuplicateLeadMatch = {
   created_at: string | null;
 };
 
-export async function findDuplicateLeads(args: {
-  domain: string;
-  firma?: string;
-}): Promise<DuplicateLeadMatch[]> {
+export async function findDuplicateLeads(
+  args: {
+    domain: string;
+    firma?: string;
+  },
+  client?: SupabaseClient
+): Promise<DuplicateLeadMatch[]> {
   const normalized = normalizeDomainInput(args.domain);
   const firma = args.firma?.trim() ?? "";
 
@@ -37,7 +43,7 @@ export async function findDuplicateLeads(args: {
     conditions.push(`firma.ilike.%${firma}%`);
   }
 
-  const supabase = createAdminClient();
+  const supabase = client ?? createAdminClient();
   const { data, error } = await supabase
     .from("leads")
     .select("id, firma, domain, akquise_status, created_at")
