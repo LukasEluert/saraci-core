@@ -15,15 +15,39 @@ type Props = {
   assignedTo: string | null;
   assignedName: string | null;
   currentUserId: string;
+  currentUserDisplayName?: string | null;
   adminUserId: string;
   vertriebUserId: string;
 };
+
+function normalizeId(id: string | null | undefined): string {
+  return id?.trim() ?? "";
+}
+
+function assignedLabel(
+  assignedTo: string | null,
+  assignedName: string | null,
+  currentUserId: string,
+  currentUserDisplayName?: string | null
+): string {
+  const assigned = normalizeId(assignedTo);
+  if (!assigned) return "Niemand zugewiesen";
+
+  if (assigned === normalizeId(currentUserId)) {
+    const name = currentUserDisplayName?.trim();
+    return name ? `Zugewiesen an ${name}` : "Zugewiesen an dich";
+  }
+
+  const name = assignedName?.trim();
+  return name ? `Zugewiesen an ${name}` : "Zugewiesen (Unbekannt)";
+}
 
 export function AssignmentControl({
   leadId,
   assignedTo,
   assignedName,
   currentUserId,
+  currentUserDisplayName,
   adminUserId,
   vertriebUserId,
 }: Props) {
@@ -41,9 +65,16 @@ export function AssignmentControl({
       }
     });
 
-  const atLukas = assignedTo === adminUserId;
-  const atDiego = assignedTo === vertriebUserId;
-  const atSelf = assignedTo === currentUserId;
+  const assigned = normalizeId(assignedTo);
+  const atLukas = assigned === normalizeId(adminUserId);
+  const atDiego = assigned === normalizeId(vertriebUserId);
+  const atSelf = assigned === normalizeId(currentUserId);
+  const display = assignedLabel(
+    assignedTo,
+    assignedName,
+    currentUserId,
+    currentUserDisplayName
+  );
 
   return (
     <div className="space-y-4">
@@ -53,9 +84,7 @@ export function AssignmentControl({
         </div>
         <div>
           <p className="text-xs text-[var(--text-tertiary)]">Aktuell zugewiesen an</p>
-          <p className="text-sm font-medium text-[var(--text-primary)]">
-            {assignedName ?? "Nicht zugewiesen"}
-          </p>
+          <p className="text-sm font-medium text-[var(--text-primary)]">{display}</p>
         </div>
       </div>
 

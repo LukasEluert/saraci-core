@@ -4,6 +4,7 @@ import { ensureBackgroundTasks } from "@/lib/akquise/backgroundTasks";
 import { getLatestLeadNotesMap } from "@/lib/akquise/leadNotes";
 import { listUsers } from "@/lib/admin/queries";
 import { getCurrentProfile } from "@/lib/auth/profile";
+import { getAdminUser } from "@/lib/auth/users";
 import { AdminOverview } from "@/components/admin/AdminOverview";
 
 export const metadata: Metadata = { title: "Handlungsbedarf" };
@@ -19,11 +20,12 @@ export default async function AdminUebersichtPage() {
   }
 
   // listAssignedLeads laeuft ueber den eingeloggten Client; als Admin liefert RLS alle Leads.
-  const [leads, users, lastActivity, profile] = await Promise.all([
+  const [leads, users, lastActivity, profile, adminUser] = await Promise.all([
     listAssignedLeads(),
     listUsers(),
     getLastActivityMap(),
     getCurrentProfile(),
+    getAdminUser(),
   ]);
 
   const userLabels: Record<string, string> = Object.fromEntries(
@@ -57,6 +59,7 @@ export default async function AdminUebersichtPage() {
         userLabels={userLabels}
         lastActivity={lastActivity}
         currentUserId={profile?.id ?? ""}
+        adminUserId={adminUser.id}
         latestNotes={latestNotes}
       />
     </div>

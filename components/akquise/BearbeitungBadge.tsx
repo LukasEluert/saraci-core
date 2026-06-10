@@ -1,7 +1,6 @@
 import { cn } from "@/lib/utils";
 import { BADGE_BASE } from "@/lib/ui/badge-styles";
 
-// Eigene Achse "in Bearbeitung" - optisch klar getrennt vom Status-Badge.
 export function BearbeitungBadge({
   name,
   className,
@@ -18,7 +17,7 @@ export function BearbeitungBadge({
       )}
     >
       <span className="size-1.5 rounded-full bg-sky-400" aria-hidden />
-      Angebot in Arbeit{name ? ` (${name})` : ""}
+      In Arbeit{name ? ` (${name})` : ""}
     </span>
   );
 }

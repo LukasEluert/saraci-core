@@ -4,7 +4,9 @@ import { getCurrentProfile } from "@/lib/auth/profile";
 import { listAssignedLeads } from "@/lib/akquise/queries";
 import { ensureBackgroundTasks } from "@/lib/akquise/backgroundTasks";
 import { isUpdatedTodayBerlin } from "@/lib/akquise/dates";
-import { resolveUserNames } from "@/lib/admin/queries";
+import { getAdminUser } from "@/lib/auth/users";
+import { resolveUserDisplayNames } from "@/lib/admin/queries";
+import { isLeadInArbeit } from "@/lib/akquise/inArbeit";
 import { getLatestLeadNotesMap } from "@/lib/akquise/leadNotes";
 import { SubscribeButton } from "@/components/akquise/SubscribeButton";
 import { NewLeadDialog } from "@/components/akquise/NewLeadDialog";
@@ -28,18 +30,20 @@ export default async function AkquisePage({ searchParams }: PageProps) {
     console.error("[ensureBackgroundTasks]", err);
   }
 
-  const [leads, profile] = await Promise.all([
+  const [leads, profile, adminUser] = await Promise.all([
     listAssignedLeads(q, { archived: showArchived }),
     getCurrentProfile(),
+    getAdminUser(),
   ]);
 
   const todayLeads = leads.filter((lead) => isUpdatedTodayBerlin(lead.updated_at));
   const pipelineLeads = leads.filter((lead) => !isUpdatedTodayBerlin(lead.updated_at));
   const hasTodaySection = todayLeads.length > 0;
 
-  const bearbeiterNames = await resolveUserNames(
-    leads.map((l) => l.bearbeitung_von).filter((v): v is string => !!v)
-  );
+  const assigneeIds = leads
+    .filter((l) => isLeadInArbeit(l.assigned_to, adminUser.id) && l.assigned_to)
+    .map((l) => l.assigned_to as string);
+  const assigneeLabels = await resolveUserDisplayNames(assigneeIds);
   const latestNotes = await getLatestLeadNotesMap(leads.map((l) => l.id));
 
   const toggleHref = showArchived
@@ -106,7 +110,8 @@ export default async function AkquisePage({ searchParams }: PageProps) {
               </h2>
               <AkquiseLeadListSection
                 leads={todayLeads}
-                bearbeiterNames={bearbeiterNames}
+                adminUserId={adminUser.id}
+                assigneeLabels={assigneeLabels}
                 showArchived={showArchived}
                 latestNotes={latestNotes}
                 highlight
@@ -121,7 +126,8 @@ export default async function AkquisePage({ searchParams }: PageProps) {
               )}
               <AkquiseLeadListSection
                 leads={pipelineLeads}
-                bearbeiterNames={bearbeiterNames}
+                adminUserId={adminUser.id}
+                assigneeLabels={assigneeLabels}
                 showArchived={showArchived}
                 latestNotes={latestNotes}
               />

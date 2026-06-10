@@ -9,6 +9,7 @@ import {
   setAkquiseStatus,
 } from "@/app/actions/akquise";
 import { BearbeitungBadge } from "@/components/akquise/BearbeitungBadge";
+import { isLeadInArbeit } from "@/lib/akquise/inArbeit";
 import { AKQUISE_STATUS, LUKAS_SCHREIB_STATUS } from "@/lib/akquise/constants";
 import { AkquiseStatusBadge } from "@/components/akquise/AkquiseStatusBadge";
 import { formatCreatedAt, formatDateTime } from "@/lib/leads/format";
@@ -19,6 +20,7 @@ type Props = {
   userLabels: Record<string, string>;
   lastActivity: Record<string, string>;
   currentUserId: string;
+  adminUserId: string;
   latestNotes?: Record<string, string>;
 };
 
@@ -45,6 +47,7 @@ export function AdminOverview({
   userLabels,
   lastActivity,
   currentUserId,
+  adminUserId,
   latestNotes = {},
 }: Props) {
   const [status, setStatus] = useState("");
@@ -120,6 +123,7 @@ export function AdminOverview({
             userLabels={userLabels}
             lastActivity={lastActivity}
             currentUserId={currentUserId}
+            adminUserId={adminUserId}
             latestNotes={latestNotes}
             highlight
           />
@@ -179,6 +183,7 @@ export function AdminOverview({
           userLabels={userLabels}
           lastActivity={lastActivity}
           currentUserId={currentUserId}
+          adminUserId={adminUserId}
           latestNotes={latestNotes}
         />
       </section>
@@ -216,6 +221,7 @@ function LeadTable({
   userLabels,
   lastActivity,
   currentUserId,
+  adminUserId,
   latestNotes = {},
   highlight = false,
 }: {
@@ -223,6 +229,7 @@ function LeadTable({
   userLabels: Record<string, string>;
   lastActivity: Record<string, string>;
   currentUserId: string;
+  adminUserId: string;
   latestNotes?: Record<string, string>;
   highlight?: boolean;
 }) {
@@ -249,6 +256,7 @@ function LeadTable({
               userLabels={userLabels}
               lastActivity={lastActivity}
               currentUserId={currentUserId}
+              adminUserId={adminUserId}
               latestNote={latestNotes[lead.id] ?? null}
               highlight={highlight}
             />
@@ -269,6 +277,7 @@ function LeadRow({
   userLabels,
   lastActivity,
   currentUserId,
+  adminUserId,
   latestNote,
   highlight,
 }: {
@@ -276,6 +285,7 @@ function LeadRow({
   userLabels: Record<string, string>;
   lastActivity: Record<string, string>;
   currentUserId: string;
+  adminUserId: string;
   latestNote: string | null;
   highlight: boolean;
 }) {
@@ -284,10 +294,9 @@ function LeadRow({
   const days = daysSince(lastActivity[lead.id]);
   const assignedSince = lead.updated_at ?? lead.created_at;
 
-  const inArbeit = !!lead.bearbeitung_von;
-  const bearbeiterName = lead.bearbeitung_von
-    ? userLabels[lead.bearbeitung_von] ?? "Unbekannt"
-    : null;
+  const inArbeit = isLeadInArbeit(lead.assigned_to, adminUserId);
+  const assigneeName =
+    lead.assigned_to != null ? userLabels[lead.assigned_to] ?? null : null;
 
   const run = (fn: () => Promise<unknown>, msg: string) =>
     startTransition(async () => {
@@ -325,7 +334,7 @@ function LeadRow({
       <td className="font-medium text-[var(--text-primary)]">
         <div className="flex flex-col gap-1">
           <span>{lead.firma || lead.domain || "Lead"}</span>
-          {inArbeit && <BearbeitungBadge name={bearbeiterName} />}
+          {inArbeit && <BearbeitungBadge name={assigneeName} />}
         </div>
       </td>
       <td>

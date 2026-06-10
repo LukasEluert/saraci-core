@@ -5,19 +5,20 @@ import { Mail, Phone } from "lucide-react";
 import { AkquiseStatusBadge } from "@/components/akquise/AkquiseStatusBadge";
 import { ArchiveLeadButton } from "@/components/akquise/ArchiveLeadButton";
 import { BearbeitungBadge } from "@/components/akquise/BearbeitungBadge";
+import { isLeadInArbeit } from "@/lib/akquise/inArbeit";
 import type { AkquiseLead } from "@/lib/akquise/types";
 
-// Mobile-Ansicht der Lead-Liste: nach der Kern-Taetigkeit "anrufen" gebaut.
-// Karte ist tappbar -> Detail; tel:/mailto:/Anrufen stoppen die Navigation.
 export function LeadCard({
   lead,
   archived = false,
-  bearbeiterName = null,
+  adminUserId,
+  assigneeLabels = {},
   latestNote = null,
 }: {
   lead: AkquiseLead;
   archived?: boolean;
-  bearbeiterName?: string | null;
+  adminUserId: string;
+  assigneeLabels?: Record<string, string>;
   latestNote?: string | null;
 }) {
   const router = useRouter();
@@ -25,6 +26,9 @@ export function LeadCard({
   const open = () => router.push(`/akquise/${lead.id}?from=akquise`);
 
   const meta = [lead.branche, lead.region].filter(Boolean).join(" · ");
+  const inArbeit = isLeadInArbeit(lead.assigned_to, adminUserId);
+  const assigneeName =
+    lead.assigned_to != null ? assigneeLabels[lead.assigned_to] ?? null : null;
 
   return (
     <div
@@ -50,9 +54,7 @@ export function LeadCard({
         <p className="-mt-1 truncate text-sm text-[var(--text-tertiary)]">{meta}</p>
       )}
 
-      {lead.bearbeitung_von && (
-        <BearbeitungBadge name={bearbeiterName} className="w-fit" />
-      )}
+      {inArbeit && <BearbeitungBadge name={assigneeName} className="w-fit" />}
 
       {latestNote && (
         <p className="truncate text-sm text-[var(--text-secondary)]">{latestNote}</p>

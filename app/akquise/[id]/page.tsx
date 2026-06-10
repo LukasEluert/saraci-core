@@ -6,7 +6,8 @@ import { getAkquiseLead } from "@/lib/akquise/queries";
 import { listLeadNotes } from "@/lib/akquise/leadNotes";
 import { getCurrentProfile } from "@/lib/auth/profile";
 import { getAdminUser, getVertriebUser } from "@/lib/auth/users";
-import { resolveUserNames } from "@/lib/admin/queries";
+import { resolveUserDisplayNames } from "@/lib/admin/queries";
+import { isLeadInArbeit } from "@/lib/akquise/inArbeit";
 import { formatCreatedAtVerbose, formatDateTime } from "@/lib/leads/format";
 import { AkquiseStatusBadge } from "@/components/akquise/AkquiseStatusBadge";
 import { ActivityForm } from "@/components/akquise/ActivityForm";
@@ -20,7 +21,6 @@ import { LeadStatusCard } from "@/components/akquise/LeadStatusCard";
 import { ArchiveLeadButton } from "@/components/akquise/ArchiveLeadButton";
 import { DeleteAppointmentButton } from "@/components/akquise/DeleteAppointmentButton";
 import { BearbeitungBadge } from "@/components/akquise/BearbeitungBadge";
-import { BearbeitungControl } from "@/components/akquise/BearbeitungControl";
 
 export const metadata: Metadata = { title: "Lead" };
 export const dynamic = "force-dynamic";
@@ -53,12 +53,14 @@ export default async function AkquiseLeadPage({ params, searchParams }: PageProp
   if (!lead) notFound();
 
   const isAdmin = profile?.role === "admin";
-  const userIds = [lead.bearbeitung_von, lead.assigned_to].filter(
-    (uid): uid is string => !!uid
-  );
-  const names = await resolveUserNames(userIds);
-  const bearbeiterName = lead.bearbeitung_von ? names[lead.bearbeitung_von] ?? null : null;
+  const assignedIds = lead.assigned_to ? [lead.assigned_to] : [];
+  const profileIds = profile ? [profile.id] : [];
+  const names = await resolveUserDisplayNames([...assignedIds, ...profileIds]);
   const assignedName = lead.assigned_to ? names[lead.assigned_to] ?? null : null;
+  const currentUserDisplayName = profile
+    ? names[profile.id] ?? profile.full_name ?? profile.email
+    : null;
+  const inArbeit = isLeadInArbeit(lead.assigned_to, adminUser.id);
 
   return (
     <div className="space-y-6">
@@ -97,7 +99,7 @@ export default async function AkquiseLeadPage({ params, searchParams }: PageProp
             </div>
             <div className="flex flex-wrap items-center gap-2 pt-1">
               <AkquiseStatusBadge status={lead.akquise_status} />
-              {lead.bearbeitung_von && <BearbeitungBadge name={bearbeiterName} />}
+              {inArbeit && <BearbeitungBadge name={assignedName} />}
             </div>
             <p className="text-xs text-[var(--text-tertiary)]">
               Erstellt: {formatCreatedAtVerbose(lead.created_at)}
@@ -149,6 +151,7 @@ export default async function AkquiseLeadPage({ params, searchParams }: PageProp
                   assignedTo={lead.assigned_to}
                   assignedName={assignedName}
                   currentUserId={profile.id}
+                  currentUserDisplayName={profile.full_name}
                   adminUserId={adminUser.id}
                   vertriebUserId={vertriebUser.id}
                 />
@@ -164,23 +167,6 @@ export default async function AkquiseLeadPage({ params, searchParams }: PageProp
               <LeadStatusCard leadId={lead.id} status={lead.akquise_status} />
             </CardContent>
           </Card>
-
-          {isAdmin && profile && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Bearbeitung</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <BearbeitungControl
-                  leadId={lead.id}
-                  bearbeitungVon={lead.bearbeitung_von}
-                  bearbeitungSeit={lead.bearbeitung_seit}
-                  currentUserId={profile.id}
-                  bearbeiterName={bearbeiterName}
-                />
-              </CardContent>
-            </Card>
-          )}
 
           <Card>
             <CardHeader>

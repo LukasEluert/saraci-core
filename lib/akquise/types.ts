@@ -25,8 +25,6 @@ export interface AkquiseLead {
   assigned_to: string | null;
   /** @deprecated DB-Backup; App nutzt lead_notes */
   notiz: string | null;
-  bearbeitung_von: string | null;
-  bearbeitung_seit: string | null;
   archiviert: boolean;
   created_at: string | null;
   updated_at: string | null;

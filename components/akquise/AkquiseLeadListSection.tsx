@@ -3,6 +3,7 @@ import { StatusSelect } from "@/components/akquise/StatusSelect";
 import { ArchiveLeadButton } from "@/components/akquise/ArchiveLeadButton";
 import { LeadCard } from "@/components/akquise/LeadCard";
 import { BearbeitungBadge } from "@/components/akquise/BearbeitungBadge";
+import { isLeadInArbeit } from "@/lib/akquise/inArbeit";
 import { formatCreatedAt } from "@/lib/leads/format";
 import type { AkquiseLead } from "@/lib/akquise/types";
 import { cn } from "@/lib/utils";
@@ -13,13 +14,15 @@ function websiteHref(domain: string): string {
 
 export function AkquiseLeadListSection({
   leads,
-  bearbeiterNames,
+  adminUserId,
+  assigneeLabels,
   showArchived,
   latestNotes = {},
   highlight = false,
 }: {
   leads: AkquiseLead[];
-  bearbeiterNames: Record<string, string | null>;
+  adminUserId: string;
+  assigneeLabels: Record<string, string>;
   showArchived: boolean;
   latestNotes?: Record<string, string>;
   highlight?: boolean;
@@ -36,9 +39,8 @@ export function AkquiseLeadListSection({
             key={lead.id}
             lead={lead}
             archived={showArchived}
-            bearbeiterName={
-              lead.bearbeitung_von ? bearbeiterNames[lead.bearbeitung_von] ?? null : null
-            }
+            adminUserId={adminUserId}
+            assigneeLabels={assigneeLabels}
             latestNote={latestNotes[lead.id] ?? null}
           />
         ))}
@@ -66,87 +68,93 @@ export function AkquiseLeadListSection({
             </tr>
           </thead>
           <tbody>
-            {leads.map((lead) => (
-              <tr
-                key={lead.id}
-                className="border-b border-[var(--border-subtle)] transition-colors hover:bg-[var(--surface-hover)] [&>td]:px-4 [&>td]:py-3"
-              >
-                <td className="font-medium text-[var(--text-primary)]">
-                  <Link
-                    href={`/akquise/${lead.id}?from=akquise`}
-                    className="hover:text-[var(--accent)] hover:underline"
-                  >
-                    {lead.firma || lead.domain}
-                  </Link>
-                  {lead.bearbeitung_von && (
-                    <div className="mt-1">
-                      <BearbeitungBadge
-                        name={bearbeiterNames[lead.bearbeitung_von] ?? null}
-                      />
-                    </div>
-                  )}
-                </td>
-                <td className="hidden text-[var(--text-secondary)] md:table-cell">
-                  {lead.branche || "—"}
-                </td>
-                <td className="hidden text-[var(--text-secondary)] lg:table-cell">
-                  {lead.region || "—"}
-                </td>
-                <td>
-                  <StatusSelect leadId={lead.id} value={lead.akquise_status} />
-                </td>
-                <td className="hidden text-[var(--text-secondary)] sm:table-cell">
-                  {lead.telefon ? (
-                    <a href={`tel:${lead.telefon}`} className="hover:text-[var(--accent)]">
-                      {lead.telefon}
-                    </a>
-                  ) : (
-                    "—"
-                  )}
-                </td>
-                <td className="hidden text-[var(--text-secondary)] xl:table-cell">
-                  {lead.email ? (
-                    <a href={`mailto:${lead.email}`} className="hover:text-[var(--accent)]">
-                      {lead.email}
-                    </a>
-                  ) : (
-                    "—"
-                  )}
-                </td>
-                <td className="hidden lg:table-cell">
-                  {lead.domain ? (
-                    <a
-                      href={websiteHref(lead.domain)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-mono text-[12px] text-[var(--accent)] hover:underline"
+            {leads.map((lead) => {
+              const inArbeit = isLeadInArbeit(lead.assigned_to, adminUserId);
+              const assigneeName =
+                lead.assigned_to != null
+                  ? assigneeLabels[lead.assigned_to] ?? null
+                  : null;
+
+              return (
+                <tr
+                  key={lead.id}
+                  className="border-b border-[var(--border-subtle)] transition-colors hover:bg-[var(--surface-hover)] [&>td]:px-4 [&>td]:py-3"
+                >
+                  <td className="font-medium text-[var(--text-primary)]">
+                    <Link
+                      href={`/akquise/${lead.id}?from=akquise`}
+                      className="hover:text-[var(--accent)] hover:underline"
                     >
-                      {lead.domain}
-                    </a>
-                  ) : (
-                    "—"
-                  )}
-                </td>
-                <td className="hidden max-w-[260px] xl:table-cell">
-                  <span
-                    className="block truncate text-[var(--text-tertiary)]"
-                    title={latestNotes[lead.id] ?? undefined}
-                  >
-                    {latestNotes[lead.id] || "—"}
-                  </span>
-                </td>
-                <td className="whitespace-nowrap text-[var(--text-tertiary)]">
-                  {formatCreatedAt(lead.created_at)}
-                </td>
-                {showArchived && (
-                  <td className="text-right">
-                    <div className="flex justify-end">
-                      <ArchiveLeadButton leadId={lead.id} archiviert />
-                    </div>
+                      {lead.firma || lead.domain}
+                    </Link>
+                    {inArbeit && (
+                      <div className="mt-1">
+                        <BearbeitungBadge name={assigneeName} />
+                      </div>
+                    )}
                   </td>
-                )}
-              </tr>
-            ))}
+                  <td className="hidden text-[var(--text-secondary)] md:table-cell">
+                    {lead.branche || "—"}
+                  </td>
+                  <td className="hidden text-[var(--text-secondary)] lg:table-cell">
+                    {lead.region || "—"}
+                  </td>
+                  <td>
+                    <StatusSelect leadId={lead.id} value={lead.akquise_status} />
+                  </td>
+                  <td className="hidden text-[var(--text-secondary)] sm:table-cell">
+                    {lead.telefon ? (
+                      <a href={`tel:${lead.telefon}`} className="hover:text-[var(--accent)]">
+                        {lead.telefon}
+                      </a>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                  <td className="hidden text-[var(--text-secondary)] xl:table-cell">
+                    {lead.email ? (
+                      <a href={`mailto:${lead.email}`} className="hover:text-[var(--accent)]">
+                        {lead.email}
+                      </a>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                  <td className="hidden lg:table-cell">
+                    {lead.domain ? (
+                      <a
+                        href={websiteHref(lead.domain)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-[12px] text-[var(--accent)] hover:underline"
+                      >
+                        {lead.domain}
+                      </a>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                  <td className="hidden max-w-[260px] xl:table-cell">
+                    <span
+                      className="block truncate text-[var(--text-tertiary)]"
+                      title={latestNotes[lead.id] ?? undefined}
+                    >
+                      {latestNotes[lead.id] || "—"}
+                    </span>
+                  </td>
+                  <td className="whitespace-nowrap text-[var(--text-tertiary)]">
+                    {formatCreatedAt(lead.created_at)}
+                  </td>
+                  {showArchived && (
+                    <td className="text-right">
+                      <div className="flex justify-end">
+                        <ArchiveLeadButton leadId={lead.id} archiviert />
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

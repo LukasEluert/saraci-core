@@ -17,19 +17,6 @@ async function authedClient() {
   return { supabase, user };
 }
 
-// "Uebernehmen"/"Freigeben" sind Admin-Aktionen. RLS bleibt unangetastet;
-// dieser Check verhindert nur, dass die Action selbst von Vertrieb genutzt wird.
-async function adminClient() {
-  const { supabase, user } = await authedClient();
-  const { data } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (data?.role !== "admin") throw new Error("Nur Admin.");
-  return { supabase, user };
-}
-
 function revalidateLeadPaths(leadId: string) {
   revalidatePath("/akquise");
   revalidatePath(`/akquise/${leadId}`);
@@ -103,10 +90,6 @@ export async function setAkquiseStatus(
     const diego = await getVertriebUser();
     updates.assigned_to = diego.id;
   }
-  if (status === "angebot_raus" || status === "email_raus") {
-    updates.bearbeitung_von = null;
-    updates.bearbeitung_seit = null;
-  }
 
   const { error } = await supabase.from("leads").update(updates).eq("id", leadId);
   if (error) throw new Error(error.message);
@@ -151,29 +134,6 @@ export async function assignToSelf(leadId: string) {
   const { error } = await supabase
     .from("leads")
     .update({ assigned_to: user.id })
-    .eq("id", leadId);
-  if (error) throw new Error(error.message);
-  revalidateLeadPaths(leadId);
-}
-
-export async function startBearbeitung(leadId: string) {
-  const { supabase, user } = await adminClient();
-  const { error } = await supabase
-    .from("leads")
-    .update({
-      bearbeitung_von: user.id,
-      bearbeitung_seit: new Date().toISOString(),
-    })
-    .eq("id", leadId);
-  if (error) throw new Error(error.message);
-  revalidateLeadPaths(leadId);
-}
-
-export async function endBearbeitung(leadId: string) {
-  const { supabase } = await adminClient();
-  const { error } = await supabase
-    .from("leads")
-    .update({ bearbeitung_von: null, bearbeitung_seit: null })
     .eq("id", leadId);
   if (error) throw new Error(error.message);
   revalidateLeadPaths(leadId);
