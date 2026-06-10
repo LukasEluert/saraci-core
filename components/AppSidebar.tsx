@@ -14,11 +14,14 @@ import { LogoutButton } from "@/components/LogoutButton";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
-function SidebarBrand() {
+function SidebarBrand({ mobile = false }: { mobile?: boolean }) {
   return (
     <Link
       href="/overview"
-      className="flex items-center border-b border-[var(--border)] px-3 py-4"
+      className={cn(
+        "flex items-center border-b border-[var(--border)] px-3 py-4",
+        mobile && "outline-none focus-visible:outline-none"
+      )}
     >
       <Image
         src="/logo-white.png"
@@ -73,7 +76,7 @@ export function AppSidebarContent({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <SidebarBrand />
+      <SidebarBrand mobile={mobile} />
       <nav className="flex min-h-0 flex-1 flex-col overflow-y-auto px-0 py-3">
         {groups.map((group, groupIndex) => (
           <div

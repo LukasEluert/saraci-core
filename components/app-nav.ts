@@ -4,7 +4,6 @@ import {
   FileText,
   Inbox,
   LayoutDashboard,
-  ListChecks,
   Phone,
   Search,
   Settings,
@@ -78,12 +77,6 @@ const NAV_GROUPS: AppNavGroup[] = [
     roles: ["admin"],
     items: [
       { href: "/admin/nutzer", label: "Nutzer", icon: UserCog, roles: ["admin"] },
-      {
-        href: "/admin/zuweisung",
-        label: "Zuweisung",
-        icon: ListChecks,
-        roles: ["admin"],
-      },
       {
         href: "/einstellungen",
         label: "Einstellungen",

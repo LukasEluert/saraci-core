@@ -45,7 +45,7 @@ export function MobileTopBar({ role }: { role?: Role }) {
           side="left"
           showCloseButton
           overlayClassName="bg-black/60 backdrop-blur-sm"
-          className="w-[min(280px,80vw)] max-w-[80vw] gap-0 border-r border-[var(--border)] bg-[var(--bg)] p-0 shadow-none"
+          className="w-[min(280px,80vw)] max-w-[80vw] gap-0 border-r border-[var(--border)] bg-[var(--bg)] p-0 shadow-none [&_[data-slot=sheet-close]]:focus-visible:border-[var(--border)] [&_[data-slot=sheet-close]]:focus-visible:ring-[var(--border)]"
         >
           <SheetTitle className="sr-only">Navigation</SheetTitle>
           <AppSidebarContent
