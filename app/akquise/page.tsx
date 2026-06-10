@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getCurrentProfile } from "@/lib/auth/profile";
 import { listAssignedLeads } from "@/lib/akquise/queries";
+import { ensureBackgroundTasks } from "@/lib/akquise/backgroundTasks";
 import { isUpdatedTodayBerlin } from "@/lib/akquise/dates";
 import { resolveUserNames } from "@/lib/admin/queries";
 import { SubscribeButton } from "@/components/akquise/SubscribeButton";
@@ -19,6 +20,12 @@ export default async function AkquisePage({ searchParams }: PageProps) {
   const params = await searchParams;
   const q = typeof params.q === "string" ? params.q : undefined;
   const showArchived = params.archiv === "1";
+
+  try {
+    await ensureBackgroundTasks();
+  } catch (err) {
+    console.error("[ensureBackgroundTasks]", err);
+  }
 
   const [leads, profile] = await Promise.all([
     listAssignedLeads(q, { archived: showArchived }),

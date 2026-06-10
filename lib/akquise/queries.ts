@@ -1,7 +1,8 @@
 import "server-only";
+import { resolveUserDisplayNames } from "@/lib/admin/queries";
 import { createClient } from "@/lib/supabase/server";
 import type {
-  Activity,
+  ActivityWithAuthor,
   AkquiseLead,
   AkquiseLeadDetail,
   Appointment,
@@ -56,6 +57,10 @@ export async function getAkquiseLead(
     .eq("lead_id", id)
     .order("created_at", { ascending: false });
 
+  const authorNames = await resolveUserDisplayNames(
+    (activities ?? []).map((a) => a.user_id as string)
+  );
+
   const { data: appointments } = await supabase
     .from("appointments")
     .select("*")
@@ -64,7 +69,10 @@ export async function getAkquiseLead(
 
   return {
     ...(lead as AkquiseLead),
-    activities: (activities ?? []) as Activity[],
+    activities: (activities ?? []).map((a) => ({
+      ...(a as ActivityWithAuthor),
+      author_name: authorNames[a.user_id as string] ?? "Unbekannt",
+    })),
     appointments: (appointments ?? []) as Appointment[],
   };
 }

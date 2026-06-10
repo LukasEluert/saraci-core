@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { listAssignedLeads, getLastActivityMap } from "@/lib/akquise/queries";
-import { ensureFollowUps } from "@/lib/akquise/followUp";
+import { ensureBackgroundTasks } from "@/lib/akquise/backgroundTasks";
 import { listUsers } from "@/lib/admin/queries";
 import { getCurrentProfile } from "@/lib/auth/profile";
 import { AdminOverview } from "@/components/admin/AdminOverview";
@@ -11,10 +11,10 @@ export const dynamic = "force-dynamic";
 export default async function AdminUebersichtPage() {
   let followUpUpdated = 0;
   try {
-    const result = await ensureFollowUps();
-    followUpUpdated = result.updated;
+    const result = await ensureBackgroundTasks();
+    followUpUpdated = result.followUpUpdated;
   } catch (err) {
-    console.error("[ensureFollowUps]", err);
+    console.error("[ensureBackgroundTasks]", err);
   }
 
   // listAssignedLeads laeuft ueber den eingeloggten Client; als Admin liefert RLS alle Leads.

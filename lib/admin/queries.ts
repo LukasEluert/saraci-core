@@ -68,6 +68,50 @@ export async function resolveUserNames(
   );
 }
 
+/** Anzeigename: full_name, sonst E-Mail-Lokalteil, sonst „Unbekannt“. */
+export function formatUserDisplayName(
+  fullName: string | null | undefined,
+  email: string | null | undefined
+): string {
+  const name = fullName?.trim();
+  if (name) return name;
+
+  const mail = email?.trim();
+  if (mail) {
+    const local = mail.split("@")[0]?.trim();
+    if (local) return local;
+  }
+
+  return "Unbekannt";
+}
+
+/** Wie resolveUserNames, aber mit E-Mail-Fallback fuer Verlauf-Autoren etc. */
+export async function resolveUserDisplayNames(
+  ids: string[]
+): Promise<Record<string, string>> {
+  const unique = Array.from(new Set(ids.filter(Boolean)));
+  if (unique.length === 0) return {};
+
+  const admin = createAdminClient();
+  const { data: profiles } = await admin
+    .from("profiles")
+    .select("id, full_name")
+    .in("id", unique);
+
+  const fullNameById = new Map(
+    (profiles ?? []).map((p) => [p.id as string, (p.full_name as string | null) ?? null])
+  );
+
+  const entries = await Promise.all(
+    unique.map(async (id) => {
+      const { data } = await admin.auth.admin.getUserById(id);
+      return [id, formatUserDisplayName(fullNameById.get(id), data.user?.email ?? null)] as const;
+    })
+  );
+
+  return Object.fromEntries(entries);
+}
+
 export async function listAllLeadsForAssignment(): Promise<AssignableLead[]> {
   const admin = createAdminClient();
   const { data, error } = await admin

@@ -43,6 +43,10 @@ export interface Activity {
   created_at: string;
 }
 
+export interface ActivityWithAuthor extends Activity {
+  author_name: string;
+}
+
 export interface Appointment {
   id: string;
   lead_id: string | null;
@@ -58,6 +62,6 @@ export interface AppointmentWithLead extends Appointment {
 }
 
 export interface AkquiseLeadDetail extends AkquiseLead {
-  activities: Activity[];
+  activities: ActivityWithAuthor[];
   appointments: Appointment[];
 }

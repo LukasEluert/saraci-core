@@ -6,18 +6,15 @@ import { getAkquiseLead } from "@/lib/akquise/queries";
 import { getCurrentProfile } from "@/lib/auth/profile";
 import { resolveUserNames } from "@/lib/admin/queries";
 import { formatCreatedAtVerbose, formatDateTime } from "@/lib/leads/format";
-import {
-  ACTIVITY_TYPE_LABELS,
-} from "@/lib/akquise/constants";
 import { StatusSelect } from "@/components/akquise/StatusSelect";
 import { ActivityForm } from "@/components/akquise/ActivityForm";
+import { ActivityHistory } from "@/components/akquise/ActivityHistory";
 import { AppointmentForm } from "@/components/akquise/AppointmentForm";
 import { AppointmentToggle } from "@/components/akquise/AppointmentToggle";
 import { LeadContactCard } from "@/components/akquise/LeadContactCard";
 import { LeadNotizCard } from "@/components/akquise/LeadNotizCard";
 import { ActionFlagControl } from "@/components/akquise/ActionFlagControl";
 import { ArchiveLeadButton } from "@/components/akquise/ArchiveLeadButton";
-import { DeleteActivityButton } from "@/components/akquise/DeleteActivityButton";
 import { DeleteAppointmentButton } from "@/components/akquise/DeleteAppointmentButton";
 import { BearbeitungBadge } from "@/components/akquise/BearbeitungBadge";
 import { BearbeitungControl } from "@/components/akquise/BearbeitungControl";
@@ -122,43 +119,7 @@ export default async function AkquiseLeadPage({ params, searchParams }: PageProp
               <CardTitle>Verlauf</CardTitle>
             </CardHeader>
             <CardContent>
-              {lead.activities.length === 0 ? (
-                <p className="text-sm text-[var(--text-secondary)]">
-                  Noch keine Aktivitäten.
-                </p>
-              ) : (
-                <ul className="space-y-3">
-                  {lead.activities.map((a) => (
-                    <li
-                      key={a.id}
-                      className="rounded-md border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2.5"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-primary)]">
-                          {ACTIVITY_TYPE_LABELS[a.typ] ?? a.typ}
-                          {a.ergebnis ? (
-                            <span className="font-normal normal-case text-[var(--text-secondary)]">
-                              {" "}
-                              — {a.ergebnis}
-                            </span>
-                          ) : null}
-                        </span>
-                        <span className="flex shrink-0 items-center gap-1">
-                          <span className="text-xs text-[var(--text-tertiary)]">
-                            {formatDateTime(a.created_at)}
-                          </span>
-                          <DeleteActivityButton id={a.id} leadId={lead.id} />
-                        </span>
-                      </div>
-                      {a.notiz && (
-                        <p className="mt-1.5 whitespace-pre-wrap text-sm text-[var(--text-secondary)]">
-                          {a.notiz}
-                        </p>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <ActivityHistory activities={lead.activities} leadId={lead.id} />
             </CardContent>
           </Card>
         </div>
