@@ -1,10 +1,13 @@
 export type AkquiseStatus =
-  | "offen"
+  | "neu"
+  | "in_kontakt"
   | "nicht_erreicht"
   | "rueckruf_vereinbart"
-  | "rueckruf_offen"
-  | "interesse"
+  | "email_schreiben"
+  | "angebot_schreiben"
+  | "email_raus"
   | "angebot_raus"
+  | "nachfassen"
   | "kein_interesse"
   | "kunde";
 

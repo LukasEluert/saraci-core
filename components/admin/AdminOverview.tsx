@@ -15,6 +15,7 @@ import {
   AKQUISE_STATUS,
   LEAD_AKTION_BADGE,
   LEAD_AKTION_STYLES,
+  LUKAS_SCHREIB_STATUS,
 } from "@/lib/akquise/constants";
 import { AkquiseStatusBadge } from "@/components/akquise/AkquiseStatusBadge";
 import { formatCreatedAt } from "@/lib/leads/format";
@@ -28,9 +29,13 @@ type Props = {
   latestNotes?: Record<string, string>;
 };
 
-// Handlungsbedarf = Vertrieb hat explizit Angebot oder Brief angefordert.
-function needsAction(lead: AkquiseLead): boolean {
-  return lead.aktion_benoetigt !== "keine";
+// Handlungsbedarf: alte aktion_benoetigt-Flags ODER Schreib-Status bei Lukas (Phase 1).
+function needsAction(lead: AkquiseLead, currentUserId: string): boolean {
+  if (lead.aktion_benoetigt !== "keine") return true;
+  return (
+    LUKAS_SCHREIB_STATUS.includes(lead.akquise_status) &&
+    lead.assigned_to === currentUserId
+  );
 }
 
 // 1 = dringendster
@@ -92,14 +97,14 @@ export function AdminOverview({
   const handlungsbedarf = useMemo(
     () =>
       leads
-        .filter(needsAction)
+        .filter((l) => needsAction(l, currentUserId))
         .sort(
           (a, b) =>
             actionRank(a) - actionRank(b) ||
             createdAtTime(a) - createdAtTime(b) ||
             waitingSince(a) - waitingSince(b)
         ),
-    [leads]
+    [leads, currentUserId]
   );
 
   const fullList = useMemo(() => {
@@ -108,10 +113,10 @@ export function AdminOverview({
       if (branche && l.branche !== branche) return false;
       if (region && l.region !== region) return false;
       if (nutzer && l.assigned_to !== nutzer) return false;
-      if (nurHandlung && !needsAction(l)) return false;
+      if (nurHandlung && !needsAction(l, currentUserId)) return false;
       return true;
     });
-  }, [leads, status, branche, region, nutzer, nurHandlung]);
+  }, [leads, status, branche, region, nutzer, nurHandlung, currentUserId]);
 
   return (
     <div className="space-y-8">
@@ -301,7 +306,7 @@ function LeadRow({
   const days = daysSince(lastActivity[lead.id]);
 
   const inArbeit = !!lead.bearbeitung_von;
-  const flagged = needsAction(lead);
+  const flagged = needsAction(lead, currentUserId);
   const mine = lead.bearbeitung_von === currentUserId;
   const bearbeiterName = lead.bearbeitung_von
     ? userLabels[lead.bearbeitung_von] ?? "Unbekannt"

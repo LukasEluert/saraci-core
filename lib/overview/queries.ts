@@ -65,7 +65,7 @@ export type RecentActivityRow = {
 };
 
 function referenceForFollowUp(lead: LeadActionRow): string {
-  return lead.aktion_seit ?? lead.updated_at ?? lead.created_at ?? "";
+  return lead.updated_at ?? lead.created_at ?? "";
 }
 
 function referenceForRueckruf(lead: LeadActionRow): string {
@@ -98,12 +98,12 @@ export async function getActionRequired(): Promise<ActionRequired> {
       .from("leads")
       .select(LEAD_ACTION_FIELDS)
       .eq("archiviert", false)
-      .eq("akquise_status", "angebot_raus"),
+      .in("akquise_status", ["angebot_raus", "email_raus"]),
     supabase
       .from("leads")
       .select(LEAD_ACTION_FIELDS)
       .eq("archiviert", false)
-      .in("akquise_status", ["rueckruf_vereinbart", "rueckruf_offen"]),
+      .in("akquise_status", ["rueckruf_vereinbart", "in_kontakt"]),
   ]);
 
   const followAll = ((followRaw ?? []) as LeadActionRow[])
@@ -137,7 +137,7 @@ export async function getPipelineStats(): Promise<PipelineStats> {
 
   const [offenRes, interesseRes, angebotRes, handlungRes] = await Promise.all([
     base().not("akquise_status", "in", '("kein_interesse","kunde")'),
-    base().eq("akquise_status", "interesse"),
+    base().eq("akquise_status", "in_kontakt"),
     base().eq("akquise_status", "angebot_raus"),
     base().neq("aktion_benoetigt", "keine"),
   ]);

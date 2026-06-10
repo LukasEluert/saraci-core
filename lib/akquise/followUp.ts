@@ -2,52 +2,30 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const FOLLOW_UP_DAYS = 7;
-const AUTO_NOTIZ = "Auto-Follow-up: Angebot vor 7+ Tagen rausgegangen";
-
-function referenceTimestamp(lead: {
-  aktion_seit: string | null;
-  updated_at: string | null;
-}): Date | null {
-  const raw = lead.aktion_seit ?? lead.updated_at;
-  if (!raw) return null;
-  const date = new Date(raw);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
 
 export async function ensureFollowUps(): Promise<{ updated: number }> {
   const supabase = createAdminClient();
-  const cutoff = new Date(Date.now() - FOLLOW_UP_DAYS * 24 * 60 * 60 * 1000);
+  const cutoff = new Date(Date.now() - FOLLOW_UP_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
   const { data, error } = await supabase
     .from("leads")
-    .select("id, aktion_seit, updated_at")
-    .eq("akquise_status", "angebot_raus")
-    .eq("aktion_benoetigt", "keine")
-    .eq("archiviert", false);
+    .select("id")
+    .in("akquise_status", ["angebot_raus", "email_raus"])
+    .eq("archiviert", false)
+    .lte("updated_at", cutoff);
 
   if (error) {
     throw new Error(error.message);
   }
 
-  const ids = (data ?? [])
-    .filter((lead) => {
-      const ref = referenceTimestamp(lead);
-      return ref !== null && ref <= cutoff;
-    })
-    .map((lead) => lead.id);
-
+  const ids = (data ?? []).map((lead) => lead.id);
   if (ids.length === 0) {
     return { updated: 0 };
   }
 
-  const now = new Date().toISOString();
   const { error: updateError } = await supabase
     .from("leads")
-    .update({
-      aktion_benoetigt: "angebot",
-      aktion_notiz: AUTO_NOTIZ,
-      aktion_seit: now,
-    })
+    .update({ akquise_status: "nachfassen" })
     .in("id", ids);
 
   if (updateError) {

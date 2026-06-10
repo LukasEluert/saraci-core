@@ -47,8 +47,8 @@ export default async function AdminUebersichtPage() {
       {followUpUpdated > 0 && (
         <div className="rounded-md border border-[var(--warning)]/40 bg-[var(--warning)]/10 px-4 py-3 text-sm text-[var(--text-secondary)]">
           {followUpUpdated}{" "}
-          {followUpUpdated === 1 ? "Lead" : "Leads"} automatisch als Follow-up markiert
-          (Angebot vor 7+ Tagen).
+          {followUpUpdated === 1 ? "Lead" : "Leads"} automatisch auf Nachfassen gesetzt
+          (Angebot/Email vor 7+ Tagen).
         </div>
       )}
 

@@ -43,7 +43,7 @@ export function StatusSelect({
       }}
       className={cn(
         "focus-ring rounded-md border px-2 py-1 text-xs font-medium disabled:opacity-50",
-        AKQUISE_STATUS_STYLES[status],
+        AKQUISE_STATUS_STYLES[status] ?? AKQUISE_STATUS_STYLES.neu,
         className
       )}
     >

@@ -59,7 +59,7 @@ export async function createAkquiseLead(input: {
       telefon: input.telefon?.trim() || null,
       email: input.email?.trim() || null,
       domain,
-      akquise_status: "offen",
+      akquise_status: "neu",
       assigned_to: user.id,
       created_by: user.id,
     })
