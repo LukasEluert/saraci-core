@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { DuplicateWarning } from "@/components/leads/DuplicateWarning";
 import { refSelectItemsById } from "@/lib/leads/selectItems";
 import {
   Table,
@@ -181,6 +182,7 @@ function SingleTab({
               placeholder="https://beispiel.de"
               required
             />
+            <DuplicateWarning domain={url} firma={company} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="company">Firmenname (optional)</Label>
