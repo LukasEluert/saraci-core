@@ -22,6 +22,7 @@ export interface AkquiseLead {
   email: string | null;
   akquise_status: AkquiseStatus;
   assigned_to: string | null;
+  /** @deprecated DB-Backup; App nutzt lead_notes */
   notiz: string | null;
   aktion_benoetigt: LeadAktion;
   aktion_notiz: string | null;

@@ -25,6 +25,7 @@ type Props = {
   userLabels: Record<string, string>;
   lastActivity: Record<string, string>;
   currentUserId: string;
+  latestNotes?: Record<string, string>;
 };
 
 // Handlungsbedarf = Vertrieb hat explizit Angebot oder Brief angefordert.
@@ -58,6 +59,7 @@ export function AdminOverview({
   userLabels,
   lastActivity,
   currentUserId,
+  latestNotes = {},
 }: Props) {
   const [status, setStatus] = useState("");
   const [branche, setBranche] = useState("");
@@ -133,6 +135,7 @@ export function AdminOverview({
             userLabels={userLabels}
             lastActivity={lastActivity}
             currentUserId={currentUserId}
+            latestNotes={latestNotes}
             highlight
           />
         )}
@@ -191,6 +194,7 @@ export function AdminOverview({
           userLabels={userLabels}
           lastActivity={lastActivity}
           currentUserId={currentUserId}
+          latestNotes={latestNotes}
         />
       </section>
     </div>
@@ -227,12 +231,14 @@ function LeadTable({
   userLabels,
   lastActivity,
   currentUserId,
+  latestNotes = {},
   highlight = false,
 }: {
   leads: AkquiseLead[];
   userLabels: Record<string, string>;
   lastActivity: Record<string, string>;
   currentUserId: string;
+  latestNotes?: Record<string, string>;
   highlight?: boolean;
 }) {
   return (
@@ -259,6 +265,7 @@ function LeadTable({
               userLabels={userLabels}
               lastActivity={lastActivity}
               currentUserId={currentUserId}
+              latestNote={latestNotes[lead.id] ?? null}
               highlight={highlight}
             />
           ))}
@@ -278,12 +285,14 @@ function LeadRow({
   userLabels,
   lastActivity,
   currentUserId,
+  latestNote,
   highlight,
 }: {
   lead: AkquiseLead;
   userLabels: Record<string, string>;
   lastActivity: Record<string, string>;
   currentUserId: string;
+  latestNote: string | null;
   highlight: boolean;
 }) {
   const router = useRouter();
@@ -346,9 +355,9 @@ function LeadRow({
       <td className="hidden max-w-[240px] lg:table-cell">
         <span
           className="block truncate text-[var(--text-tertiary)]"
-          title={lead.notiz ?? undefined}
+          title={latestNote ?? undefined}
         >
-          {lead.notiz || "—"}
+          {latestNote || "—"}
         </span>
       </td>
       <td className="hidden text-[var(--text-secondary)] md:table-cell">

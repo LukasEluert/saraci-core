@@ -15,11 +15,13 @@ export function AkquiseLeadListSection({
   leads,
   bearbeiterNames,
   showArchived,
+  latestNotes = {},
   highlight = false,
 }: {
   leads: AkquiseLead[];
   bearbeiterNames: Record<string, string | null>;
   showArchived: boolean;
+  latestNotes?: Record<string, string>;
   highlight?: boolean;
 }) {
   const wrapperClass = highlight
@@ -37,6 +39,7 @@ export function AkquiseLeadListSection({
             bearbeiterName={
               lead.bearbeitung_von ? bearbeiterNames[lead.bearbeitung_von] ?? null : null
             }
+            latestNote={latestNotes[lead.id] ?? null}
           />
         ))}
       </div>
@@ -127,9 +130,9 @@ export function AkquiseLeadListSection({
                 <td className="hidden max-w-[260px] xl:table-cell">
                   <span
                     className="block truncate text-[var(--text-tertiary)]"
-                    title={lead.notiz ?? undefined}
+                    title={latestNotes[lead.id] ?? undefined}
                   >
-                    {lead.notiz || "—"}
+                    {latestNotes[lead.id] || "—"}
                   </span>
                 </td>
                 <td className="whitespace-nowrap text-[var(--text-tertiary)]">

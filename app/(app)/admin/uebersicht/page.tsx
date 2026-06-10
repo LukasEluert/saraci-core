@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { listAssignedLeads, getLastActivityMap } from "@/lib/akquise/queries";
 import { ensureBackgroundTasks } from "@/lib/akquise/backgroundTasks";
+import { getLatestLeadNotesMap } from "@/lib/akquise/leadNotes";
 import { listUsers } from "@/lib/admin/queries";
 import { getCurrentProfile } from "@/lib/auth/profile";
 import { AdminOverview } from "@/components/admin/AdminOverview";
@@ -31,6 +32,7 @@ export default async function AdminUebersichtPage() {
       u.full_name ? `${u.full_name}` : u.email ?? u.id,
     ])
   );
+  const latestNotes = await getLatestLeadNotesMap(leads.map((l) => l.id));
 
   return (
     <div className="space-y-6">
@@ -55,6 +57,7 @@ export default async function AdminUebersichtPage() {
         userLabels={userLabels}
         lastActivity={lastActivity}
         currentUserId={profile?.id ?? ""}
+        latestNotes={latestNotes}
       />
     </div>
   );

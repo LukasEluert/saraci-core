@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAkquiseLead } from "@/lib/akquise/queries";
+import { listLeadNotes } from "@/lib/akquise/leadNotes";
 import { getCurrentProfile } from "@/lib/auth/profile";
 import { resolveUserNames } from "@/lib/admin/queries";
 import { formatCreatedAtVerbose, formatDateTime } from "@/lib/leads/format";
@@ -12,7 +13,7 @@ import { ActivityHistory } from "@/components/akquise/ActivityHistory";
 import { AppointmentForm } from "@/components/akquise/AppointmentForm";
 import { AppointmentToggle } from "@/components/akquise/AppointmentToggle";
 import { LeadContactCard } from "@/components/akquise/LeadContactCard";
-import { LeadNotizCard } from "@/components/akquise/LeadNotizCard";
+import { LeadNotes } from "@/components/akquise/LeadNotes";
 import { ActionFlagControl } from "@/components/akquise/ActionFlagControl";
 import { ArchiveLeadButton } from "@/components/akquise/ArchiveLeadButton";
 import { DeleteAppointmentButton } from "@/components/akquise/DeleteAppointmentButton";
@@ -40,9 +41,10 @@ export default async function AkquiseLeadPage({ params, searchParams }: PageProp
       : from === "heute"
         ? { href: "/akquise/heute", label: "← Zurück zu Heute" }
         : { href: "/akquise", label: "← Zurück zu Akquise" };
-  const [lead, profile] = await Promise.all([
+  const [lead, profile, notes] = await Promise.all([
     getAkquiseLead(id),
     getCurrentProfile(),
+    listLeadNotes(id),
   ]);
   if (!lead) notFound();
 
@@ -101,7 +103,12 @@ export default async function AkquiseLeadPage({ params, searchParams }: PageProp
               <CardTitle>Über diesen Lead</CardTitle>
             </CardHeader>
             <CardContent>
-              <LeadNotizCard leadId={lead.id} notiz={lead.notiz} />
+              <LeadNotes
+                leadId={lead.id}
+                notes={notes}
+                currentUserId={profile?.id ?? ""}
+                isAdmin={isAdmin}
+              />
             </CardContent>
           </Card>
 

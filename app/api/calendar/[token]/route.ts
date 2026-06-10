@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getLatestLeadNotesMapAdmin } from "@/lib/akquise/leadNotes";
 import { buildCalendar, type IcsEvent } from "@/lib/akquise/ics";
 
 export const runtime = "nodejs";
@@ -21,7 +22,6 @@ type ApptRow = {
     firma: string | null;
     domain: string | null;
     telefon: string | null;
-    notiz: string | null;
   } | null;
 };
 
@@ -57,14 +57,21 @@ export async function GET(req: Request, context: RouteContext) {
 
   const { data: appointments } = await admin
     .from("appointments")
-    .select(
-      "id, titel, faellig_am, lead:leads(id, firma, domain, telefon, notiz)"
-    )
+    .select("id, titel, faellig_am, lead:leads(id, firma, domain, telefon)")
     .eq("user_id", profile.id)
     .eq("erledigt", false)
     .gte("faellig_am", from)
     .lte("faellig_am", to)
     .order("faellig_am", { ascending: true });
+
+  const leadIds = Array.from(
+    new Set(
+      ((appointments ?? []) as unknown as ApptRow[])
+        .map((a) => a.lead?.id)
+        .filter((id): id is string => !!id)
+    )
+  );
+  const latestNotes = await getLatestLeadNotesMapAdmin(leadIds, admin);
 
   const appBase =
     process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
@@ -74,7 +81,7 @@ export async function GET(req: Request, context: RouteContext) {
     (a) => {
       const firma = a.lead?.firma || a.lead?.domain || "—";
       const telefon = a.lead?.telefon?.trim() || "—";
-      const notiz = truncateText(a.lead?.notiz);
+      const notiz = truncateText(a.lead?.id ? latestNotes[a.lead.id] : null);
       const summary = `${a.titel}: ${firma}`;
       const link = a.lead?.id
         ? `${appBase}/akquise/${a.lead.id}`

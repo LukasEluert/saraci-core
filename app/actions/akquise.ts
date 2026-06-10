@@ -59,7 +59,6 @@ export async function createAkquiseLead(input: {
       telefon: input.telefon?.trim() || null,
       email: input.email?.trim() || null,
       domain,
-      notiz: input.notiz?.trim() || null,
       akquise_status: "offen",
       assigned_to: user.id,
       created_by: user.id,
@@ -68,6 +67,16 @@ export async function createAkquiseLead(input: {
     .single();
 
   if (error) throw new Error(error.message);
+
+  const notiz = input.notiz?.trim();
+  if (notiz) {
+    const { error: noteError } = await supabase.from("lead_notes").insert({
+      lead_id: data.id,
+      user_id: user.id,
+      inhalt: notiz,
+    });
+    if (noteError) throw new Error(noteError.message);
+  }
 
   revalidatePath("/akquise");
   return { id: data.id as string };
@@ -88,20 +97,6 @@ export async function setAkquiseStatus(leadId: string, status: string) {
 
   revalidatePath("/akquise");
   revalidatePath(`/akquise/${leadId}`);
-}
-
-export async function updateLeadNotiz(leadId: string, text: string) {
-  const { supabase } = await authedClient();
-  const { error } = await supabase
-    .from("leads")
-    .update({ notiz: text.trim() || null })
-    .eq("id", leadId);
-
-  if (error) throw new Error(error.message);
-
-  revalidatePath("/akquise");
-  revalidatePath(`/akquise/${leadId}`);
-  revalidatePath("/admin/uebersicht");
 }
 
 export async function setLeadAktion(input: {

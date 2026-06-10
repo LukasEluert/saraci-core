@@ -41,7 +41,6 @@ export function LeadActionsPanel({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [note, setNote] = useState(lead.notiz ?? "");
   const [nextStep, setNextStep] = useState(lead.naechster_schritt ?? "");
   const [status, setStatus] = useState(lead.status ?? "new");
   const [industryId, setIndustryId] = useState(lead.industry_id ?? "");
@@ -256,20 +255,6 @@ export function LeadActionsPanel({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <section className="space-y-2">
-        <Label className="label-caps text-[10px]">Notiz</Label>
-        <Textarea
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          onBlur={() => {
-            if (note !== (lead.notiz ?? "")) {
-              saveField({ note }, "Notiz gespeichert");
-            }
-          }}
-          rows={4}
-        />
-      </section>
 
       <section className="space-y-2">
         <Label className="label-caps text-[10px]">Nächster Schritt</Label>

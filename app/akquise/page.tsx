@@ -5,6 +5,7 @@ import { listAssignedLeads } from "@/lib/akquise/queries";
 import { ensureBackgroundTasks } from "@/lib/akquise/backgroundTasks";
 import { isUpdatedTodayBerlin } from "@/lib/akquise/dates";
 import { resolveUserNames } from "@/lib/admin/queries";
+import { getLatestLeadNotesMap } from "@/lib/akquise/leadNotes";
 import { SubscribeButton } from "@/components/akquise/SubscribeButton";
 import { NewLeadDialog } from "@/components/akquise/NewLeadDialog";
 import { AkquiseLeadListSection } from "@/components/akquise/AkquiseLeadListSection";
@@ -39,6 +40,7 @@ export default async function AkquisePage({ searchParams }: PageProps) {
   const bearbeiterNames = await resolveUserNames(
     leads.map((l) => l.bearbeitung_von).filter((v): v is string => !!v)
   );
+  const latestNotes = await getLatestLeadNotesMap(leads.map((l) => l.id));
 
   const toggleHref = showArchived
     ? q
@@ -106,6 +108,7 @@ export default async function AkquisePage({ searchParams }: PageProps) {
                 leads={todayLeads}
                 bearbeiterNames={bearbeiterNames}
                 showArchived={showArchived}
+                latestNotes={latestNotes}
                 highlight
               />
             </section>
@@ -120,6 +123,7 @@ export default async function AkquisePage({ searchParams }: PageProps) {
                 leads={pipelineLeads}
                 bearbeiterNames={bearbeiterNames}
                 showArchived={showArchived}
+                latestNotes={latestNotes}
               />
             </section>
           )}

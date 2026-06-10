@@ -11,7 +11,10 @@ import { StatusBadge } from "@/components/leads/StatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { formatCreatedAtVerbose, formatDateTime } from "@/lib/leads/format";
+import { LeadNotes } from "@/components/akquise/LeadNotes";
 import { getLeadDetail } from "@/lib/leads/queries";
+import { listLeadNotes } from "@/lib/akquise/leadNotes";
+import { getCurrentProfile } from "@/lib/auth/profile";
 import { listIndustries, listRegions } from "@/lib/leads/reference";
 import type { TriggeredRule } from "@/lib/core/checks/types";
 
@@ -33,10 +36,12 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
       : from === "akquise"
         ? { href: "/akquise", label: "← Zurück zu Akquise" }
         : { href: "/leads", label: "← Zurück zu Leads" };
-  const [lead, industries, regions] = await Promise.all([
+  const [lead, industries, regions, profile, notes] = await Promise.all([
     getLeadDetail(id),
     listIndustries(),
     listRegions(),
+    getCurrentProfile(),
+    listLeadNotes(id),
   ]);
 
   if (!lead) notFound();
@@ -81,6 +86,20 @@ export default async function LeadDetailPage({ params, searchParams }: PageProps
               )}
             </div>
           </header>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Notizen</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <LeadNotes
+                leadId={lead.id}
+                notes={notes}
+                currentUserId={profile?.id ?? ""}
+                isAdmin={profile?.role === "admin"}
+              />
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>

@@ -9,7 +9,6 @@ export const runtime = "nodejs";
 
 const patchSchema = z.object({
   status: z.string().optional(),
-  note: z.string().optional(),
   next_step: z.string().optional(),
   industry_id: z.string().uuid().nullable().optional(),
   region_id: z.string().uuid().nullable().optional(),
@@ -45,7 +44,6 @@ export async function PATCH(req: Request, context: RouteContext) {
 
   const updates: Record<string, unknown> = {};
   if (parsed.data.status !== undefined) updates.status = parsed.data.status;
-  if (parsed.data.note !== undefined) updates.notiz = parsed.data.note;
   if (parsed.data.next_step !== undefined) {
     updates.naechster_schritt = parsed.data.next_step;
   }

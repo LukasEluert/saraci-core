@@ -13,10 +13,12 @@ export function LeadCard({
   lead,
   archived = false,
   bearbeiterName = null,
+  latestNote = null,
 }: {
   lead: AkquiseLead;
   archived?: boolean;
   bearbeiterName?: string | null;
+  latestNote?: string | null;
 }) {
   const router = useRouter();
 
@@ -52,8 +54,8 @@ export function LeadCard({
         <BearbeitungBadge name={bearbeiterName} className="w-fit" />
       )}
 
-      {lead.notiz && (
-        <p className="truncate text-sm text-[var(--text-secondary)]">{lead.notiz}</p>
+      {latestNote && (
+        <p className="truncate text-sm text-[var(--text-secondary)]">{latestNote}</p>
       )}
 
       <div className="flex flex-col gap-1 text-sm">
