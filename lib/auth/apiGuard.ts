@@ -18,3 +18,12 @@ export async function requireAdminApi(): Promise<NextResponse | null> {
   }
   return null;
 }
+
+/** Eingeloggte Nutzer (Admin oder Vertrieb) – z. B. Duplikat-Check beim Lead-Anlegen. */
+export async function requireAuthenticatedApi(): Promise<NextResponse | null> {
+  const profile = await getCurrentProfile();
+  if (!profile) {
+    return NextResponse.json({ error: "Nicht angemeldet." }, { status: 401 });
+  }
+  return null;
+}

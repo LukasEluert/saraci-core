@@ -17,9 +17,11 @@ type DuplicateLead = {
 export function DuplicateWarning({
   domain,
   firma,
+  leadHrefPrefix = "/leads",
 }: {
   domain: string;
   firma?: string;
+  leadHrefPrefix?: string;
 }) {
   const [duplicates, setDuplicates] = useState<DuplicateLead[]>([]);
 
@@ -80,7 +82,7 @@ export function DuplicateWarning({
         {duplicates.map((lead) => (
           <li key={lead.id}>
             <a
-              href={`/leads/${lead.id}`}
+              href={`${leadHrefPrefix}/${lead.id}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded px-1 py-0.5 transition-colors hover:bg-[var(--warning)]/10"

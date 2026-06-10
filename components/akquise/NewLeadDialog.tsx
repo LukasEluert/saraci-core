@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { createAkquiseLead } from "@/app/actions/akquise";
+import { DuplicateWarning } from "@/components/leads/DuplicateWarning";
 import {
   Dialog,
   DialogContent,
@@ -148,6 +149,11 @@ export function NewLeadDialog() {
                 className={INPUT_CLASS}
               />
             </label>
+            <DuplicateWarning
+              domain={website}
+              firma={firma}
+              leadHrefPrefix="/akquise"
+            />
 
             <label className="block space-y-1">
               <span className="label-caps">Notiz</span>

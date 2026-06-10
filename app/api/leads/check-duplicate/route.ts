@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAdminApi } from "@/lib/auth/apiGuard";
+import { requireAuthenticatedApi } from "@/lib/auth/apiGuard";
 import { findDuplicateLeads } from "@/lib/leads/checkDuplicate";
 
 export const runtime = "nodejs";
@@ -11,7 +11,7 @@ const bodySchema = z.object({
 });
 
 export async function POST(req: Request) {
-  const denied = await requireAdminApi();
+  const denied = await requireAuthenticatedApi();
   if (denied) return denied;
 
   let json: unknown;

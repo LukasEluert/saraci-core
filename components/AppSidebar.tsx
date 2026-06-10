@@ -4,7 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { activeNavHref, navForRole, type Role } from "@/components/app-nav";
+import {
+  activeNavHref,
+  navForRole,
+  navGroupsForRole,
+  type Role,
+} from "@/components/app-nav";
 import { LogoutButton } from "@/components/LogoutButton";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -62,42 +67,66 @@ export function AppSidebarContent({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
+  const groups = navGroupsForRole(role);
   const items = navForRole(role);
   const active = activeNavHref(pathname, items);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
       <SidebarBrand />
-      <nav className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-0 py-3">
-        {items.map((item) => {
-          const isActive = item.href === active;
-          const Icon = item.icon;
-
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onNavigate}
+      <nav className="flex min-h-0 flex-1 flex-col overflow-y-auto px-0 py-3">
+        {groups.map((group, groupIndex) => (
+          <div
+            key={group.title}
+            className={cn(
+              groupIndex > 0 && "mt-1 border-t border-[var(--border)]"
+            )}
+          >
+            <p
               className={cn(
-                "focus-ring flex items-center gap-3 rounded-[6px] border-l-2 px-3 text-sm transition-colors",
-                mobile ? "min-h-12 py-2.5" : "py-2",
-                isActive
-                  ? "border-[var(--accent)] bg-[var(--bg-elevated)] text-[var(--text-primary)]"
-                  : "border-transparent text-[var(--text-tertiary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-secondary)]"
+                "px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]",
+                groupIndex === 0 ? "pt-0" : "pt-4"
               )}
             >
-              <Icon
-                className={cn(
-                  "size-[18px] shrink-0",
-                  isActive ? "text-[var(--text-primary)]" : "text-[var(--text-tertiary)]"
-                )}
-                strokeWidth={1.75}
-                aria-hidden
-              />
-              <span className="font-medium tracking-[-0.01em]">{item.label}</span>
-            </Link>
-          );
-        })}
+              {group.title}
+            </p>
+            <div className="flex flex-col gap-0.5">
+              {group.items.map((item) => {
+                const isActive = item.href === active;
+                const Icon = item.icon;
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onNavigate}
+                    className={cn(
+                      "focus-ring flex items-center gap-3 rounded-[6px] border-l-2 px-3 text-sm transition-colors",
+                      mobile ? "min-h-12 py-2.5" : "py-2",
+                      isActive
+                        ? "border-[var(--accent)] bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                        : "border-transparent text-[var(--text-tertiary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-secondary)]"
+                    )}
+                  >
+                    <Icon
+                      className={cn(
+                        "size-[18px] shrink-0",
+                        isActive
+                          ? "text-[var(--text-primary)]"
+                          : "text-[var(--text-tertiary)]"
+                      )}
+                      strokeWidth={1.75}
+                      aria-hidden
+                    />
+                    <span className="font-medium tracking-[-0.01em]">
+                      {item.label}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
       <SidebarFooter />
     </div>

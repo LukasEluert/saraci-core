@@ -18,28 +18,91 @@ export type AppNavItem = {
   href: string;
   label: string;
   icon: LucideIcon;
+  roles: Role[];
 };
 
-const ADMIN_NAV: AppNavItem[] = [
-  { href: "/overview", label: "Übersicht", icon: LayoutDashboard },
-  { href: "/research", label: "Lead Research", icon: Search },
-  { href: "/leads", label: "Leads", icon: Users },
-  { href: "/berichte", label: "Berichte", icon: FileText },
-  { href: "/admin/uebersicht", label: "Handlungsbedarf", icon: Inbox },
-  { href: "/akquise", label: "Akquise", icon: Phone },
-  { href: "/akquise/heute", label: "Heute", icon: CalendarClock },
-  { href: "/admin/nutzer", label: "Nutzer", icon: UserCog },
-  { href: "/admin/zuweisung", label: "Zuweisung", icon: ListChecks },
-  { href: "/einstellungen", label: "Einstellungen", icon: Settings },
+export type AppNavGroup = {
+  title: string;
+  roles: Role[];
+  items: AppNavItem[];
+};
+
+const NAV_GROUPS: AppNavGroup[] = [
+  {
+    title: "Arbeitsbereich",
+    roles: ["admin"],
+    items: [
+      {
+        href: "/overview",
+        label: "Übersicht",
+        icon: LayoutDashboard,
+        roles: ["admin"],
+      },
+      {
+        href: "/admin/uebersicht",
+        label: "Handlungsbedarf",
+        icon: Inbox,
+        roles: ["admin"],
+      },
+    ],
+  },
+  {
+    title: "Lead-Management",
+    roles: ["admin"],
+    items: [
+      {
+        href: "/research",
+        label: "Lead Research",
+        icon: Search,
+        roles: ["admin"],
+      },
+      { href: "/leads", label: "Leads", icon: Users, roles: ["admin"] },
+      { href: "/berichte", label: "Berichte", icon: FileText, roles: ["admin"] },
+    ],
+  },
+  {
+    title: "Vertrieb",
+    roles: ["admin", "vertrieb"],
+    items: [
+      { href: "/akquise", label: "Akquise", icon: Phone, roles: ["admin", "vertrieb"] },
+      {
+        href: "/akquise/heute",
+        label: "Heute",
+        icon: CalendarClock,
+        roles: ["admin", "vertrieb"],
+      },
+    ],
+  },
+  {
+    title: "System",
+    roles: ["admin"],
+    items: [
+      { href: "/admin/nutzer", label: "Nutzer", icon: UserCog, roles: ["admin"] },
+      {
+        href: "/admin/zuweisung",
+        label: "Zuweisung",
+        icon: ListChecks,
+        roles: ["admin"],
+      },
+      {
+        href: "/einstellungen",
+        label: "Einstellungen",
+        icon: Settings,
+        roles: ["admin"],
+      },
+    ],
+  },
 ];
 
-const VERTRIEB_NAV: AppNavItem[] = [
-  { href: "/akquise", label: "Meine Leads", icon: Phone },
-  { href: "/akquise/heute", label: "Heute", icon: CalendarClock },
-];
+export function navGroupsForRole(role: Role): AppNavGroup[] {
+  return NAV_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => item.roles.includes(role)),
+  })).filter((group) => group.roles.includes(role) && group.items.length > 0);
+}
 
 export function navForRole(role: Role): AppNavItem[] {
-  return role === "admin" ? ADMIN_NAV : VERTRIEB_NAV;
+  return navGroupsForRole(role).flatMap((group) => group.items);
 }
 
 /**
