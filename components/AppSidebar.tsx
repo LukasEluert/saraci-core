@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
+import { BrandLogo } from "@/components/BrandLogo";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
@@ -16,22 +16,14 @@ import { cn } from "@/lib/utils";
 
 function SidebarBrand({ mobile = false }: { mobile?: boolean }) {
   return (
-    <Link
-      href="/overview"
+    <div
       className={cn(
-        "flex items-center border-b border-[var(--border)] px-3 py-4",
+        "border-b border-[var(--border)] px-3 py-4",
         mobile && "outline-none focus-visible:outline-none"
       )}
     >
-      <Image
-        src="/logo-white.png"
-        alt="Saraci"
-        width={682}
-        height={556}
-        priority
-        className="h-9 w-auto"
-      />
-    </Link>
+      <BrandLogo size="md" linked showWordmark />
+    </div>
   );
 }
 

@@ -4,7 +4,21 @@
   "description": "Lead Research, Checks und Berichte für Saraci Core.",
   "start_url": "/overview",
   "display": "standalone",
-  "background_color": "#060606",
-  "theme_color": "#060606",
-  "lang": "de"
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "lang": "de",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }

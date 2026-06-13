@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { Menu } from "lucide-react";
+import { BrandLogo } from "@/components/BrandLogo";
 import { AppSidebarContent } from "@/components/AppSidebar";
 import type { Role } from "@/components/app-nav";
 import {
@@ -27,14 +27,7 @@ export function MobileTopBar({ role }: { role?: Role }) {
         </button>
 
         <div className="flex flex-1 justify-center">
-          <Image
-            src="/logo-white.png"
-            alt="Saraci"
-            width={682}
-            height={556}
-            priority
-            className="h-7 w-auto"
-          />
+          <BrandLogo size="sm" showWordmark />
         </div>
 
         <div className="size-11 shrink-0" aria-hidden />

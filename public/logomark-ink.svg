@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Saraci Core logomark monochrome dark">
+  <g fill="#0a0a0a">
+    <rect x="77" y="60" width="102" height="19"></rect>
+    <rect x="93" y="92" width="70" height="19"></rect>
+    <rect x="109" y="124" width="38" height="19"></rect>
+  </g>
+  <circle cx="128" cy="175" r="14" fill="#0a0a0a"></circle>
+</svg>
