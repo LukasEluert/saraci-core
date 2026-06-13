@@ -2,6 +2,8 @@
 
 import { fromZonedTime } from "date-fns-tz";
 import { revalidatePath } from "next/cache";
+import { getCurrentProfile } from "@/lib/auth/profile";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { AKQUISE_STATUS_VALUES } from "@/lib/akquise/constants";
 import { getAdminUser, getVertriebUser } from "@/lib/auth/users";
@@ -21,6 +23,44 @@ function revalidateLeadPaths(leadId: string) {
   revalidatePath("/akquise");
   revalidatePath(`/akquise/${leadId}`);
   revalidatePath("/admin/uebersicht");
+}
+
+/** RLS-freier Lead-Load + Berechtigung: aktueller Besitzer oder Admin. */
+async function assertCanReassignLead(leadId: string, userId: string) {
+  const admin = createAdminClient();
+  const { data: lead, error } = await admin
+    .from("leads")
+    .select("assigned_to")
+    .eq("id", leadId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!lead) throw new Error("Lead nicht gefunden");
+
+  const profile = await getCurrentProfile();
+  const isOwner = lead.assigned_to === userId;
+  const isAdmin = profile?.role === "admin";
+
+  if (!isOwner && !isAdmin) {
+    throw new Error("Nicht berechtigt diesen Lead zuzuweisen");
+  }
+
+  return lead;
+}
+
+async function updateLeadAssignment(
+  leadId: string,
+  userId: string,
+  assignedTo: string
+) {
+  await assertCanReassignLead(leadId, userId);
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("leads")
+    .update({ assigned_to: assignedTo })
+    .eq("id", leadId);
+  if (error) throw new Error(`Zuweisung fehlgeschlagen: ${error.message}`);
+  revalidateLeadPaths(leadId);
 }
 
 export async function createAkquiseLead(input: {
@@ -85,14 +125,22 @@ export async function setAkquiseStatus(
 
   const updates: Record<string, unknown> = { akquise_status: status };
 
-  const assignToDiego = new Set(["angebot_raus", "email_raus", "nachfassen"]);
-  if (assignToDiego.has(status)) {
+  const assignToDiegoStatuses = new Set(["angebot_raus", "email_raus", "nachfassen"]);
+  const reassignsToVertrieb = assignToDiegoStatuses.has(status);
+  if (reassignsToVertrieb) {
     const diego = await getVertriebUser();
     updates.assigned_to = diego.id;
   }
 
-  const { error } = await supabase.from("leads").update(updates).eq("id", leadId);
-  if (error) throw new Error(error.message);
+  if (reassignsToVertrieb) {
+    await assertCanReassignLead(leadId, user.id);
+    const admin = createAdminClient();
+    const { error } = await admin.from("leads").update(updates).eq("id", leadId);
+    if (error) throw new Error(error.message);
+  } else {
+    const { error } = await supabase.from("leads").update(updates).eq("id", leadId);
+    if (error) throw new Error(error.message);
+  }
 
   if (opts?.logNote) {
     const { error: actError } = await supabase.from("activities").insert({
@@ -108,35 +156,20 @@ export async function setAkquiseStatus(
 }
 
 export async function assignToLukas(leadId: string) {
-  const { supabase } = await authedClient();
+  const { user } = await authedClient();
   const lukas = await getAdminUser();
-  const { error } = await supabase
-    .from("leads")
-    .update({ assigned_to: lukas.id })
-    .eq("id", leadId);
-  if (error) throw new Error(error.message);
-  revalidateLeadPaths(leadId);
+  await updateLeadAssignment(leadId, user.id, lukas.id);
 }
 
 export async function assignToDiego(leadId: string) {
-  const { supabase } = await authedClient();
+  const { user } = await authedClient();
   const diego = await getVertriebUser();
-  const { error } = await supabase
-    .from("leads")
-    .update({ assigned_to: diego.id })
-    .eq("id", leadId);
-  if (error) throw new Error(error.message);
-  revalidateLeadPaths(leadId);
+  await updateLeadAssignment(leadId, user.id, diego.id);
 }
 
 export async function assignToSelf(leadId: string) {
-  const { supabase, user } = await authedClient();
-  const { error } = await supabase
-    .from("leads")
-    .update({ assigned_to: user.id })
-    .eq("id", leadId);
-  if (error) throw new Error(error.message);
-  revalidateLeadPaths(leadId);
+  const { user } = await authedClient();
+  await updateLeadAssignment(leadId, user.id, user.id);
 }
 
 export async function setLeadArchived(leadId: string, archiviert: boolean) {
