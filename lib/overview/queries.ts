@@ -26,6 +26,13 @@ const NOT_REACHED_PATTERNS = [
 
 const INTERESSE_STATUSES = ["in_kontakt", "email_schreiben", "angebot_schreiben"];
 const ANGEBOT_STATUSES = ["angebot_raus", "email_raus", "nachfassen"];
+const LIFETIME_ANGEBOT_STATUSES = [
+  "angebot_raus",
+  "email_raus",
+  "nachfassen",
+  "kunde",
+];
+const LIFETIME_INTERESSE_EXCLUDED = ["neu", "nicht_erreicht", "kein_interesse"];
 
 export type ActionItemRow = {
   id: string;
@@ -93,6 +100,7 @@ export type OverviewData = {
   kpis: WeeklyKPIs;
   callStats: CallStats;
   funnel: FunnelData;
+  funnelLifetime: FunnelData;
   callsPerDay: CallsPerDayPoint[];
   weeklyTrend: WeeklyTrendPoint[];
   activities: RecentActivityRow[];
@@ -321,10 +329,23 @@ export async function getFunnel(period: OverviewPeriod): Promise<FunnelData> {
   const angebot = angebotRes.count ?? 0;
   const kunde = kundeRes.count ?? 0;
 
+  return {
+    stages: buildFunnelStages(angerufen, erreicht, interesse, angebot, kunde),
+    hasCalls: true,
+  };
+}
+
+function buildFunnelStages(
+  angerufen: number,
+  erreicht: number,
+  interesse: number,
+  angebot: number,
+  kunde: number
+): FunnelStage[] {
   const pct = (value: number, base: number) =>
     base > 0 ? Math.round((value / base) * 100) : null;
 
-  const stages: FunnelStage[] = [
+  return [
     {
       key: "angerufen",
       label: "Angerufen",
@@ -356,8 +377,97 @@ export async function getFunnel(period: OverviewPeriod): Promise<FunnelData> {
       conversionPercent: pct(kunde, angebot),
     },
   ];
+}
 
-  return { stages, hasCalls: true };
+export async function getFunnelLifetime(): Promise<FunnelData> {
+  const supabase = createAdminClient();
+  const vertriebIds = await getVertriebUserIds();
+  const userFilter =
+    vertriebIds.length > 0
+      ? vertriebIds
+      : ["00000000-0000-0000-0000-000000000000"];
+
+  const { data: callRows, error: callError } = await supabase
+    .from("activities")
+    .select("ergebnis, lead_id")
+    .eq("typ", "anruf")
+    .in("user_id", userFilter);
+
+  if (callError) throw new Error(callError.message);
+
+  const calls = callRows ?? [];
+  const angerufen = calls.length;
+
+  if (angerufen === 0) {
+    return { stages: [], hasCalls: false };
+  }
+
+  const erreicht = calls.filter((row) =>
+    isCallReached(row.ergebnis as string | null)
+  ).length;
+
+  const reachedLeadIds = [
+    ...new Set(
+      calls
+        .filter(
+          (row) =>
+            isCallReached(row.ergebnis as string | null) && row.lead_id != null
+        )
+        .map((row) => row.lead_id as string)
+    ),
+  ];
+
+  const baseLeads = () =>
+    supabase
+      .from("leads")
+      .select("id", { count: "exact" })
+      .eq("archiviert", false);
+
+  const [activeLeadsRes, reachedLeadsRes, angebotRes, kundeRes] =
+    await Promise.all([
+      baseLeads().not(
+        "akquise_status",
+        "in",
+        `(${LIFETIME_INTERESSE_EXCLUDED.map((status) => `"${status}"`).join(",")})`
+      ),
+      reachedLeadIds.length > 0
+        ? baseLeads().in("id", reachedLeadIds)
+        : Promise.resolve({ data: [], error: null }),
+      supabase
+        .from("leads")
+        .select("*", { count: "exact", head: true })
+        .eq("archiviert", false)
+        .in("akquise_status", LIFETIME_ANGEBOT_STATUSES),
+      supabase
+        .from("leads")
+        .select("*", { count: "exact", head: true })
+        .eq("archiviert", false)
+        .eq("akquise_status", "kunde"),
+    ]);
+
+  if (activeLeadsRes.error) throw new Error(activeLeadsRes.error.message);
+  if ("error" in reachedLeadsRes && reachedLeadsRes.error) {
+    throw new Error(reachedLeadsRes.error.message);
+  }
+
+  const interesseIds = new Set<string>([
+    ...(activeLeadsRes.data ?? []).map((row) => row.id as string),
+    ...((reachedLeadsRes.data ?? []) as { id: string }[]).map((row) => row.id),
+  ]);
+
+  const angebot = angebotRes.count ?? 0;
+  const kunde = kundeRes.count ?? 0;
+
+  return {
+    stages: buildFunnelStages(
+      angerufen,
+      erreicht,
+      interesseIds.size,
+      angebot,
+      kunde
+    ),
+    hasCalls: true,
+  };
 }
 
 export async function getCallsPerDay(days: number): Promise<CallsPerDayPoint[]> {
@@ -472,22 +582,32 @@ export async function getOverviewData(
   period: OverviewPeriod,
   userId: string
 ): Promise<OverviewData> {
-  const [actionItems, kpis, callStats, funnel, callsPerDay, weeklyTrend, activities] =
-    await Promise.all([
-      getMyActionItems(userId),
-      getWeeklyKPIs(period, userId),
-      getCallStats(period),
-      getFunnel(period),
-      getCallsPerDay(14),
-      getWeeklyTrend(),
-      getRecentActivities(period),
-    ]);
+  const [
+    actionItems,
+    kpis,
+    callStats,
+    funnel,
+    funnelLifetime,
+    callsPerDay,
+    weeklyTrend,
+    activities,
+  ] = await Promise.all([
+    getMyActionItems(userId),
+    getWeeklyKPIs(period, userId),
+    getCallStats(period),
+    getFunnel(period),
+    getFunnelLifetime(),
+    getCallsPerDay(14),
+    getWeeklyTrend(),
+    getRecentActivities(period),
+  ]);
 
   return {
     actionItems,
     kpis,
     callStats,
     funnel,
+    funnelLifetime,
     callsPerDay,
     weeklyTrend,
     activities,

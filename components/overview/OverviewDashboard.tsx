@@ -83,7 +83,11 @@ export function OverviewDashboard({ initialPeriod, initialData }: Props) {
         </div>
 
         <div className="mt-8">
-          <SalesFunnelSection funnel={data.funnel} period={period} />
+          <SalesFunnelSection
+            funnel={data.funnel}
+            funnelLifetime={data.funnelLifetime}
+            period={period}
+          />
         </div>
 
         <div className="mt-8">
